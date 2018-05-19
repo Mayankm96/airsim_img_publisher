@@ -52,7 +52,6 @@ catkin_package( CATKIN_DEPENDS
 ## Build ##
 ###########
 include_directories(
-  ${AIRSIM_WS}/devel
   ${AIRSIM_ROOT}/AirLib/include
   ${AIRSIM_ROOT}/AirLib/include/controllers
   ${AIRSIM_ROOT}/AirLib/deps/MavLinkCom/include

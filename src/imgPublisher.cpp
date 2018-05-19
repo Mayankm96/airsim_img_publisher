@@ -2,10 +2,13 @@
 #include <sstream>
 #include <fstream>
 #include <math.h>
-#include <thread>
 #include <iterator>
+// pthread
+#include <thread>
 #include <mutex>
 #include <signal.h>
+#include <profile_manager/profiling_data_srv.h>
+#include <profile_manager/start_profiling_srv.h>
 // openCV
 #include <opencv2/highgui/highgui.hpp>
 // ros
@@ -18,8 +21,6 @@
 // airsim
 #include "common/Common.hpp"
 #include "vehicles/multirotor/api/MultirotorRpcLibClient.hpp"
-#include <profile_manager/profiling_data_srv.h>
-#include <profile_manager/start_profiling_srv.h>
 // include
 #include "airsim_img_publisher/AirSimClientWrapper.h"
 #include "airsim_img_publisher/TfCallback.h"
