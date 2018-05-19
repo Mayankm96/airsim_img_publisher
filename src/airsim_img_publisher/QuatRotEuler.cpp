@@ -1,7 +1,6 @@
-#include "QuatRotEuler.h"
+#include "airsim_img_publisher/QuatRotEuler.h"
 
-
-geometry_msgs::Vector3 SetVector3(float x, float y, float z){
+geometry_msgs::Vector3 setVector3(float x, float y, float z){
 	geometry_msgs::Vector3 Vec;
 	Vec.x = x;
 	Vec.y = y;
@@ -18,8 +17,7 @@ geometry_msgs::Quaternion setQuat(float qx, float qy, float qz, float qw){
 	return q;
 }
 
-
-//http://www.euclideanspace.com/maths/geometry/rotations/conversions/matrixToQuaternion/index.htm
+// Reference: http://www.euclideanspace.com/maths/geometry/rotations/conversions/matrixToQuaternion/index.htm
 geometry_msgs::Quaternion rot2quat(Eigen::Matrix3d M){
 	double trace = M.trace();
 
@@ -57,7 +55,7 @@ geometry_msgs::Quaternion rot2quat(Eigen::Matrix3d M){
 
 	geometry_msgs::Quaternion quat;
 	quat = setQuat(q[1], q[2], q[3], q[0]);
-    return quat;	
+  return quat;
 }
 
 geometry_msgs::Quaternion quatProd(geometry_msgs::Quaternion q1,
@@ -109,7 +107,7 @@ geometry_msgs::Vector3 quat2rpy(geometry_msgs::Quaternion quat){
 	pitch = asin(2*(qw*qy - qz*qx));
 	yaw = atan2(2*(qw*qz + qx*qy),1 - 2*(qy*qy + qz*qz) );
 
-	geometry_msgs::Vector3 rpy = SetVector3(roll, pitch, yaw);
+	geometry_msgs::Vector3 rpy = setVector3(roll, pitch, yaw);
 	return rpy;
 }
 

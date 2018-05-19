@@ -1,3 +1,6 @@
+#ifndef QuatRotEuler_H
+#define QuatRotEuler_H
+
 #include "geometry_msgs/Vector3.h"
 #include "geometry_msgs/Point.h"
 #include "nav_msgs/Path.h"
@@ -5,7 +8,7 @@
 #include <Eigen/Dense>
 
 //Function to help setting data into a ROS Vector3
-geometry_msgs::Vector3 SetVector3(float x, float y, float z);
+geometry_msgs::Vector3 setVector3(float x, float y, float z);
 
 //Function to set quaternion values
 geometry_msgs::Quaternion setQuat(float qx, float qy, float qz, float qw);
@@ -37,3 +40,5 @@ Eigen::Matrix3d roty(double theta);
 
 //Rotation matrix for a rotation about the z-axis
 Eigen::Matrix3d rotz(double theta);
+
+#endif

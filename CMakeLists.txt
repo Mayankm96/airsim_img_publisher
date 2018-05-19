@@ -2,37 +2,19 @@ cmake_minimum_required(VERSION 2.8.3)
 
 project(airsim_img_publisher)
 
+# Path to catkin workspace
+set(AIRSIM_WS "/home/mayankm/ais_valada/fount_landing/airsim_ws")
+message(STATUS " AIRSIM_WS: ${AIRSIM_WS}")
 
-set (Airlib_addr  $ENV{HOME}/AirSim/AirLib)
-set (catkin_workspace_path $ENV{HOME}/catkin_ws) 
-
+# Path to AirSim repository compiled with g++
+set(AIRSIM_ROOT "/home/mayankm/AirSim_ROS")
+message(STATUS " AIRSIM_ROOT: ${AIRSIM_ROOT}")
 
 ## Compile as C++11, supported in ROS Kinetic and newer
+add_compile_options(-std=c++11)
 
 # F:DN to be added when airsim communication is desired
-add_compile_options(-std=c++11)
 set(CUDA_USE_STATIC_CUDA_RUNTIME OFF) #behzad added, need this always
-find_package(Eigen3 REQUIRED)
-find_package(OpenCV REQUIRED)
-include_directories(
-# include
-    ${Airlib_addr}/include   
-    ${Airlib_addr}/include/controllers
-    ${EIGEN3_INCLUDE_DIR}
-    #/usr/local/cuda/include/
-   ${catkin_workspace_path}/src/publishAirsimImgs/include 
-   ${catkin_workspace_path}/src/publishAirsimImgs/src
-   ${catkin_workspace_path}/devel/include 
-   )
-link_directories(
-    ${Airlib_addr}/lib 
-    ${Airlib_addr}/deps/MavLinkCom/lib  
-    ${Airlib_addr}/deps/rpclib/lib
-    ${PCL_LIBRARY_DIRS})
-
-
-
-
 
 ## Find catkin macros and libraries
 ## if COMPONENTS list like find_package(catkin REQUIRED COMPONENTS xyz)
@@ -41,52 +23,71 @@ find_package(catkin REQUIRED COMPONENTS
   roscpp
   rospy
   std_msgs
-  message_generation
+	sensor_msgs
+	nav_msgs
   image_transport
   cv_bridge
   tf
 )
 
-find_package( PCL REQUIRED )
-
-## Generate added messages and services with any dependencies listed here
-generate_messages(
-   DEPENDENCIES
-   std_msgs
-)
-
-
-
-####################
+find_package(Eigen3 REQUIRED)
+find_package(OpenCV REQUIRED)
+find_package(PCL    REQUIRED)
 
 ###################################
 ## catkin specific configuration ##
 ###################################
-catkin_package( CATKIN_DEPENDS 
-  message_runtime 
-  roscpp 
-  rospy 
-  std_msgs
+catkin_package( CATKIN_DEPENDS
+	roscpp
+	rospy
+	std_msgs
+	sensor_msgs
+	nav_msgs
+	image_transport
+	cv_bridge
+	tf
 )
 
 ###########
 ## Build ##
 ###########
-include_directories( # include
- ${catkin_INCLUDE_DIRS}
- ${PCL_INCLUDE_DIRS}
- ) 
+include_directories(
+  ${AIRSIM_WS}/devel
+  ${AIRSIM_ROOT}/AirLib/include
+  ${AIRSIM_ROOT}/AirLib/include/controllers
+  ${AIRSIM_ROOT}/AirLib/deps/MavLinkCom/include
+  ${AIRSIM_ROOT}/AirLib/deps/rpclib/include
+  ${EIGEN3_INCLUDE_DIR}
+  ${catkin_INCLUDE_DIRS}
+  ${PCL_INCLUDE_DIRS}
+  #/usr/local/cuda/include/
+  include
+)
 
- add_definitions(${PCL_DEFINITIONS})
+add_definitions(
+  ${PCL_DEFINITIONS}
+)
 
+link_directories(
+  ${AIRSIM_ROOT}/AirLib/lib
+  ${AIRSIM_ROOT}/AirLib/deps/MavLinkCom/lib
+  ${AIRSIM_ROOT}/AirLib/deps/rpclib/lib
+  ${PCL_LIBRARY_DIRS}
+)
 
+# add C++ executable node airsim_imgPublisher
+add_executable(airsim_imgPublisher
+  src/imgPublisher.cpp
+  src/airsim_img_publisher/AirSimClientWrapper.cpp
+  src/airsim_img_publisher/QuatRotEuler.cpp
+  src/airsim_img_publisher/TfCallback.cpp
+)
 
-add_executable(airsim_imgPublisher 
-               src/imgPublisher.cpp 
-               src/input_sampler.cpp
-               src/HelperFunctions/QuatRotEuler.cpp
-               src/Callbacks/callbacks.cpp)
-target_link_libraries(airsim_imgPublisher ${catkin_LIBRARIES} AirLib  MavLinkCom rpc pthread ${OpenCV_LIBS})
-
-add_dependencies(airsim_imgPublisher airsim_img_publisher_generate_messages_cpp)
-
+target_link_libraries(airsim_imgPublisher
+  ${catkin_LIBRARIES}
+  AirLib
+  MavLinkCom
+  rpc
+  pthread
+  ${OpenCV_LIBS}
+)
