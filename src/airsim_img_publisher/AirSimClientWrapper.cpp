@@ -251,7 +251,7 @@ struct image_response_decoded AirSimClientWrapper::image_decode(bool all_front){
 
 struct image_response_decoded AirSimClientWrapper::poll_frame_and_decode()
 {
-		std::string file_to_output_name = ros::package::getPath("publishAirsimImgs") + "/src/timing.txt";
+		std::string file_to_output_name = ros::package::getPath("airsim_img_publisher") + "/src/timing.txt";
     file_to_output_.open(file_to_output_name.c_str(), std::ios_base::app);
 
     steady_clock::time_point allf_s; //total function time s

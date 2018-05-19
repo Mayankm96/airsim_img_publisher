@@ -11,6 +11,7 @@
 #include <opencv2/highgui/highgui.hpp>
 // ros
 #include <ros/ros.h>
+#include <ros/package.h>
 #include <image_transport/image_transport.h>
 #include <cv_bridge/cv_bridge.h>
 #include "std_msgs/String.h"
@@ -37,8 +38,11 @@ void sigIntHandler(int sig)
     //abort();
     exit_out = true;
     std::cout << "killing the main thread" << std::endl;
+
+    std::string filename = ros::package::getPath("airsim_img_publisher") + "/src/debug.txt";
+
     std::ofstream myfile;
-    myfile.open("~/blah.txt", std::ofstream::app);
+    myfile.open(filename.c_str(), std::ofstream::app);
     myfile << "killing the main thread" << std::endl;
     myfile.close();
     // client_mutex.unlock();
