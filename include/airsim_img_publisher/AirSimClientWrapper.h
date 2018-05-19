@@ -32,7 +32,6 @@ struct image_response_decoded
 	geometry_msgs::Pose pose_gt; //ground truth
 	geometry_msgs::Twist twist;
 	bool valid_data = true;
-	uint64_t poll_time;
 	uint64_t timestamp;
 };
 
@@ -44,7 +43,6 @@ struct image_response
  msr::airlib::Quaternionr q;
 
  uint64_t timestamp;
- uint64_t poll_time;
 };
 
 class AirSimClientWrapper

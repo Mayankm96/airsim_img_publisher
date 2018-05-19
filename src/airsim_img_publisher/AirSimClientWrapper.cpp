@@ -134,13 +134,7 @@ void AirSimClientWrapper::poll_frame(bool all_front)
                 response.image = client_->simGetImages(request);
             }
 
-            ros::Time now =  ros::Time::now();
-            if (this->localization_method_ == "vins_mono"){//for vins mono the imgs and imu
-                                                          //need to be synchronized
-                response.timestamp = response.image.at(0).time_stamp;
-            }else{            //for profiling purposes
-                response.timestamp = (uint64_t) now.sec*1e9 + (uint64_t)now.nsec;
-            }
+						response.timestamp = response.image.at(0).time_stamp;
 
             if (last_time_stamp >= response.timestamp) {
                 ROS_ERROR_STREAM("imag time stamps shouldn't be out of order"<< last_time_stamp<< " " <<response.timestamp<< " ");
@@ -149,8 +143,6 @@ void AirSimClientWrapper::poll_frame(bool all_front)
 
             image_response_queue_mutex.lock();
             if (response.image.size() == request.size()) {
-                response.poll_time = (ros::Time::now() - start_hook_t).toSec()*1e9;
-                //ROS_INFO_STREAM("poll only"<<response.poll_time);
                 image_response_queue.push(response);
             }
             image_response_queue_mutex.unlock();
@@ -248,7 +240,6 @@ struct image_response_decoded AirSimClientWrapper::image_decode(bool all_front){
         }
 
         result.timestamp = response.timestamp;
-        result.poll_time = response.poll_time;
         return result;
     }
     catch(...)

@@ -7,8 +7,6 @@
 #include <thread>
 #include <mutex>
 #include <signal.h>
-#include <profile_manager/profiling_data_srv.h>
-#include <profile_manager/start_profiling_srv.h>
 // openCV
 #include <opencv2/highgui/highgui.hpp>
 // ros
@@ -27,34 +25,12 @@
 
 using namespace std;
 
-// Profiling
-long long g_poll_decode_acc = 0;
-int g_poll_decode_ctr = 0;
-bool CLCT_DATA;
-
-void log_data_before_shutting_down()
-{
-    std::string ns = ros::this_node::getName();
-    profile_manager::profiling_data_srv profiling_data_srv_inst;
-
-    profiling_data_srv_inst.request.key = "poll_decode";
-    profiling_data_srv_inst.request.value = (((double)g_poll_decode_acc)/1e9)/g_poll_decode_ctr;
-    if (ros::service::waitForService("/record_profiling_data", 10))
-    {
-        if(!ros::service::call("/record_profiling_data",profiling_data_srv_inst))
-        {
-            ROS_ERROR_STREAM("could not probe data using stats manager");
-        }
-    }
-}
-
 string localization_method;
 extern std::mutex client_mutex;
 extern volatile bool exit_out;
 
-void sigIntHandlerPrivate(int sig)
+void sigIntHandler(int sig)
 {
-    log_data_before_shutting_down();
     //my_thread.join();
     // client_mutex.lock();
     ros::shutdown();
@@ -81,7 +57,6 @@ sensor_msgs::CameraInfo getCameraParams()
     ros::param::get("/airsim_imgPublisher/cy",cy);
     ros::param::get("/airsim_imgPublisher/scale_x",width);
     ros::param::get("/airsim_imgPublisher/scale_y",height);
-    ros::param::get("/CLCT_DATA",CLCT_DATA);
 
     //CameraParam.header.frame_id = "camera";
     CameraParam.header.frame_id = localization_method;
@@ -223,7 +198,7 @@ int main(int argc, char **argv)
 
   std::thread poll_frame_thread(&AirSimClientWrapper::poll_frame,
           &input_sample__obj, all_front);
-  signal(SIGINT, sigIntHandlerPrivate);
+  signal(SIGINT, sigIntHandler);
 
   while (ros::ok())
   {
@@ -293,16 +268,6 @@ int main(int argc, char **argv)
       disparity_pub.publish(disparityImg);
 
       ros::spinOnce();
-
-      ros::Time end_hook_t = ros::Time::now();
-
-      if (CLCT_DATA) {
-          g_poll_decode_acc += (imgs.poll_time + ((end_hook_t - start_hook_t).toSec()*1e9));
-          //ROS_INFO_STREAM("decode "<< (((end_hook_t - start_hook_t).toSec()*1e9)));
-          //ROS_INFO_STREAM("decode "<< imgs.poll_time);
-
-          g_poll_decode_ctr++;
-      }
       loop_rate.sleep();
   }
 
