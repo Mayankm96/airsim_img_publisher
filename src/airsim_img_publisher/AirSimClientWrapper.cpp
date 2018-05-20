@@ -100,7 +100,10 @@ void AirSimClientWrapper::connect(const std::string& ip_addr, uint16_t port)
 
 void AirSimClientWrapper::poll_frame(bool all_front)
 {
-    static uint64 last_time_stamp = 0;
+		// new client object for separate thread
+		msr::airlib::MultirotorRpcLibClient *my_client = new msr::airlib::MultirotorRpcLibClient(this->ip_addr_, this->port_);
+
+		static uint64 last_time_stamp = 0;
     const int max_tries = 1000000;
 
     ImageTyp image_type;
@@ -130,12 +133,12 @@ void AirSimClientWrapper::poll_frame(bool all_front)
                 return;
             }
 
-            response.image = client_->simGetImages(request);
-            response.p = client_->getPosition();
-            response.q = client_->getOrientation();
+            response.image = my_client->simGetImages(request);
+            response.p = my_client->getPosition();
+            response.q = my_client->getOrientation();
 
             for (int i = 0; response.image.size() != request.size() && i < max_tries; i++) {
-                response.image = client_->simGetImages(request);
+                response.image = my_client->simGetImages(request);
             }
 
             image_response_queue_mutex.lock();
