@@ -32,7 +32,6 @@ struct image_response_decoded
 	geometry_msgs::Pose pose_gt; //ground truth
 	geometry_msgs::Twist twist;
 	bool valid_data = true;
-	uint64_t timestamp;
 };
 
 struct image_response
@@ -41,8 +40,6 @@ struct image_response
 
  msr::airlib::Vector3r p;
  msr::airlib::Quaternionr q;
-
- uint64_t timestamp;
 };
 
 class AirSimClientWrapper
@@ -77,7 +74,6 @@ class AirSimClientWrapper
 		std::string ip_addr_;
 		uint16_t port_;
 	  std::string localization_method_;
-		std::ofstream file_to_output_;
 
 	  uint64_t timestamp_offset_;
 	  bool first_image_ = true;

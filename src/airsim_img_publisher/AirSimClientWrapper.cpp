@@ -108,17 +108,21 @@ void AirSimClientWrapper::poll_frame(bool all_front)
     if (all_front) {
          cameraId = 0;
          image_type = ImageTyp::Scene;
-    }else{
+    }
+		else {
          cameraId = 4;
          image_type = ImageTyp::DepthPlanner;
     }
-    std::vector<ImageReq> request = {ImageReq(cameraId, image_type),
-	    ImageReq(0, ImageTyp::DepthPlanner)};
+
+    std::vector<ImageReq> request = {
+			ImageReq(cameraId, image_type),
+	    ImageReq(0, ImageTyp::DepthPlanner)
+		};
 
     try{
         struct image_response response;
-        while(true){
-            ros::Time start_hook_t = ros::Time::now();
+        while(true)
+				{
             client_mutex.lock();
             if (exit_out) {
                 std::cout << "killing the poll thread" << std::endl;
@@ -133,13 +137,6 @@ void AirSimClientWrapper::poll_frame(bool all_front)
             for (int i = 0; response.image.size() != request.size() && i < max_tries; i++) {
                 response.image = client_->simGetImages(request);
             }
-
-						response.timestamp = response.image.at(0).time_stamp;
-
-            if (last_time_stamp >= response.timestamp) {
-                ROS_ERROR_STREAM("imag time stamps shouldn't be out of order"<< last_time_stamp<< " " <<response.timestamp<< " ");
-            }
-            last_time_stamp = response.timestamp;
 
             image_response_queue_mutex.lock();
             if (response.image.size() == request.size()) {
@@ -239,7 +236,6 @@ struct image_response_decoded AirSimClientWrapper::image_decode(bool all_front){
             result.pose.orientation.w = response.q.w();
         }
 
-        result.timestamp = response.timestamp;
         return result;
     }
     catch(...)
@@ -251,18 +247,6 @@ struct image_response_decoded AirSimClientWrapper::image_decode(bool all_front){
 
 struct image_response_decoded AirSimClientWrapper::poll_frame_and_decode()
 {
-		std::string file_to_output_name = ros::package::getPath("airsim_img_publisher") + "/src/timing.txt";
-    file_to_output_.open(file_to_output_name.c_str(), std::ios_base::app);
-
-    steady_clock::time_point allf_s; //total function time s
-    steady_clock::time_point allf_e; //total function time e
-    steady_clock::time_point partf_s; //one invocation of tracker start
-    steady_clock::time_point partf_e; //one invocation of tracker end
-    steady_clock::time_point partf2_s; //one invocation of tracker start
-    steady_clock::time_point partf2_e; //one invocation of tracker end
-
-		allf_s  = steady_clock::now();
-
     struct image_response_decoded result;
     const int max_tries = 1000000;
 
@@ -273,22 +257,11 @@ struct image_response_decoded AirSimClientWrapper::poll_frame_and_decode()
     };
 
     //result.twist = twist();
-
-    partf_s = steady_clock::now();
     std::vector<ImageRes> response = client_->simGetImages(request);
-
-    partf_e = steady_clock::now();
-    auto partf_t = duration_cast<milliseconds>(partf_e - partf_s).count();
-
-
-
 
     for (int i = 0; response.size() != request.size() && i < max_tries; i++) {
         response = client_->simGetImages(request);
     }
-
-
-    partf2_s  = steady_clock::now();
 
     if (response.size() == request.size()) {
 #if CV_MAJOR_VERSION==3
@@ -301,32 +274,13 @@ struct image_response_decoded AirSimClientWrapper::poll_frame_and_decode()
         result.depth_front = cv::imdecode(response.at(1).image_data_uint8, CV_LOAD_IMAGE_GRAYSCALE);
 #endif
 
-        /*
-           int width = response.at(1).width;
-           int height = response.at(1).height;
-           std::vector<float>& floats = response.at(1).image_data_float;
-
-           result.depth = cv::Mat(height, width, CV_32FC1);
-           for (int i = 0; i < height; i++) {
-           for (int j = 0; j < width; j++) {
-           float dist = floats[i*width + j];
-           result.depth.at<float>(i,j) = dist;
-           }
-           }
-           */
-
         result.depth_front.convertTo(result.depth_front, CV_32FC1, 25.6/256);
 
-        // result.planar_depth = cv::Mat(height, width, CV_32FC1);
-        // convertToPlanDepth(result.depth, result.depth);
-
-        // result.disparity = cv::Mat(height, width, CV_32FC1);
-        // convertToDisparity(result.depth, result.disparity);
-    } else {
+    }
+		else
+		{
         std::cerr << "Images not returned successfully" << std::endl;
     }
-    partf2_e  = steady_clock::now();
-    auto partf2_t = duration_cast<milliseconds>(partf2_e - partf2_s).count();
 
     //ground truth values
     static auto initial_pos_gt= response.back().camera_position;
@@ -352,14 +306,6 @@ struct image_response_decoded AirSimClientWrapper::poll_frame_and_decode()
         result.pose.orientation.z = q.z();
         result.pose.orientation.w = q.w();
     }
-
-
-    allf_e = steady_clock::now();
-    auto allf_t = duration_cast<milliseconds>(allf_e - allf_s).count();
-    file_to_output_<<"part_f"<<partf_t<< std::endl;
-    file_to_output_<<"part2_f"<<partf2_t<< std::endl;
-    file_to_output_<<"all_f"<<allf_t<< std::endl;
-    file_to_output_.close();
 
     return result;
 }

@@ -206,20 +206,11 @@ int main(int argc, char **argv)
 
   while (ros::ok())
   {
-      ros::Time start_hook_t = ros::Time::now();
       auto imgs = input_sample__obj.image_decode(all_front);
       if (!imgs.valid_data) {
           continue;
       }
-
-      uint32_t timestamp_s = uint32_t(imgs.timestamp / 1000000000);
-      uint32_t timestamp_ns = uint32_t(imgs.timestamp % 1000000000);
-      ros::Time timestamp(timestamp_s, timestamp_ns);
-      if(imgs.timestamp != uint64_t(timestamp_s)*1000000000 + timestamp_ns){
-          std::cout<<"---------------------failed"<<std::setprecision(30)<<imgs.timestamp<< "!="
-              <<std::setprecision(30)<<timestamp_s*1000000000 + timestamp_ns<<std::endl;
-          ROS_ERROR_STREAM("coversion in img publisher failed");
-      }
+      ros::Time timestamp = ros::Time::now();
 
       cv::Mat disparityImageMat;
       imgs.depth_front.convertTo(disparityImageMat, CV_8UC1);
