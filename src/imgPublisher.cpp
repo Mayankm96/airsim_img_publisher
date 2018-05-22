@@ -204,56 +204,72 @@ int main(int argc, char **argv)
           &input_sample__obj, all_front);
   signal(SIGINT, sigIntHandler);
 
+  // *** F:DN end of communication with simulator (Airsim)
+  ros::Time last_timestamp(0);
   while (ros::ok())
   {
-      auto imgs = input_sample__obj.image_decode(all_front);
-      if (!imgs.valid_data) {
-          continue;
-      }
-      ros::Time timestamp = ros::Time::now();
+    ros::Time start_hook_t = ros::Time::now();
 
-      cv::Mat disparityImageMat;
-      imgs.depth_front.convertTo(disparityImageMat, CV_8UC1);
-      imgs.depth_back.convertTo(disparityImageMat, CV_8UC1);
-      stereo_msgs::DisparityImage disparityImg;
-      disparityImg.header.stamp = timestamp;
+    auto imgs = input_sample__obj.image_decode(all_front);
+    if (!imgs.valid_data) {
+        continue;
+    }
 
-      disparityImg.header.frame_id= localization_method;
-      //disparityImg.header.frame_id= "camera";
+    // image timestamp
+    uint32_t timestamp_s = uint32_t(imgs.timestamp / 1000000000);
+    uint32_t timestamp_ns = uint32_t(imgs.timestamp % 1000000000);
+    ros::Time timestamp(timestamp_s, timestamp_ns);
+    if(imgs.timestamp != uint64_t(timestamp_s)*1000000000 + timestamp_ns)
+    {
+        std::cout<<"---------------------failed"<<std::setprecision(30)<<imgs.timestamp<< "!="
+                 <<std::setprecision(30)<<timestamp_s*1000000000 + timestamp_ns<<std::endl;
+        ROS_ERROR_STREAM("coversion in img publisher failed");
+    }
 
-      disparityImg.f = 128; //focal length, half of the image width
-      disparityImg.T = .14; //baseline, half of the distance between the two cameras
-      disparityImg.min_disparity = .44; // f.t/z(depth max)
-      disparityImg.max_disparity = 179; // f.t/z(depth min)
-      disparityImg.delta_d = .018; //possibly change
-      disparityImg.image = *(cv_bridge::CvImage(std_msgs::Header(), "8UC1", disparityImageMat).toImageMsg());
-      disparityImg.valid_window.x_offset = 0;
-      disparityImg.valid_window.y_offset = 0;
-      disparityImg.valid_window.height =  144;
-      disparityImg.valid_window.width =  256;
-      disparityImg.valid_window.do_rectify =  false; //possibly change
+    cv::Mat disparityImageMat;
+    imgs.depth_front.convertTo(disparityImageMat, CV_8UC1);
+    imgs.depth_back.convertTo(disparityImageMat, CV_8UC1);
+    stereo_msgs::DisparityImage disparityImg;
+    disparityImg.header.stamp = timestamp;
 
-      // *** F:DN conversion of opencv images to ros images
-      // msgImgL = cv_bridge::CvImage(std_msgs::Header(), "bgr8", imgs.left).toImageMsg();
-      msgImgR = cv_bridge::CvImage(std_msgs::Header(), "bgr8", imgs.right).toImageMsg();
-      msgDepth_front = cv_bridge::CvImage(std_msgs::Header(), "32FC1", imgs.depth_front).toImageMsg();
-      msgDepth_back = cv_bridge::CvImage(std_msgs::Header(), "32FC1", imgs.depth_back).toImageMsg();
+    disparityImg.header.frame_id= localization_method;
+    //disparityImg.header.frame_id= "camera";
 
-      //Stamp messages
-      msgCameraInfo.header.stamp = timestamp;
-      // msgImgL->header.stamp = msgCameraInfo.header.stamp;
-      msgImgR->header.stamp = msgCameraInfo.header.stamp;
-      msgDepth_front->header.stamp =  msgCameraInfo.header.stamp;
-      msgDepth_back->header.stamp =  msgCameraInfo.header.stamp;
+    disparityImg.f = 128; //focal length, half of the image width
+    disparityImg.T = .14; //baseline, half of the distance between the two cameras
+    disparityImg.min_disparity = .44; // f.t/z(depth max)
+    disparityImg.max_disparity = 179; // f.t/z(depth min)
+    disparityImg.delta_d = .018; //possibly change
+    disparityImg.image = *(cv_bridge::CvImage(std_msgs::Header(), "8UC1", disparityImageMat).toImageMsg());
+    disparityImg.valid_window.x_offset = 0;
+    disparityImg.valid_window.y_offset = 0;
+    disparityImg.valid_window.height =  144;
+    disparityImg.valid_window.width =  256;
+    disparityImg.valid_window.do_rectify =  false; //possibly change
 
-      // Set the frame ids
-      msgDepth_front->header.frame_id = localization_method;
-      msgDepth_back->header.frame_id = localization_method;
+    // *** F:DN conversion of opencv images to ros images
+    // msgImgL = cv_bridge::CvImage(std_msgs::Header(), "bgr8", imgs.left).toImageMsg();
+    msgImgR = cv_bridge::CvImage(std_msgs::Header(), "bgr8", imgs.right).toImageMsg();
+    msgDepth_front = cv_bridge::CvImage(std_msgs::Header(), "32FC1", imgs.depth_front).toImageMsg();
+    msgDepth_back = cv_bridge::CvImage(std_msgs::Header(), "32FC1", imgs.depth_back).toImageMsg();
 
-      //Publish transforms into tf tree
-      CameraPosePublisher(imgs.pose, imgs.pose_gt, timestamp);
+    //Stamp messages
+    msgCameraInfo.header.stamp = timestamp;
+    // msgImgL->header.stamp = msgCameraInfo.header.stamp;
+    msgImgR->header.stamp = msgCameraInfo.header.stamp;
+    msgDepth_front->header.stamp =  msgCameraInfo.header.stamp;
+    msgDepth_back->header.stamp =  msgCameraInfo.header.stamp;
 
-      //Publish images
+    // Set the frame ids
+    msgDepth_front->header.frame_id = localization_method;
+    msgDepth_back->header.frame_id = localization_method;
+
+    //Publish transforms into tf tree
+    CameraPosePublisher(imgs.pose, imgs.pose_gt, timestamp);
+
+    //Publish images
+    if (timestamp > last_timestamp)
+    {
       imgR_pub.publish(msgImgR);
       depth_pub_front.publish(msgDepth_front);
       depth_pub_back.publish(msgDepth_back);
@@ -261,9 +277,14 @@ int main(int argc, char **argv)
       imgParamR_pub.publish(msgCameraInfo);
       imgParamDepth_pub.publish(msgCameraInfo);
       disparity_pub.publish(disparityImg);
+      timestamp = last_timestamp;
+    }
 
-      ros::spinOnce();
-      loop_rate.sleep();
+    ros::Time end_hook_t = ros::Time::now();
+    //ROS_INFO_STREAM("decoding and publishing fram time"<< end_hook_t - start_hook_t);
+
+    ros::spinOnce();
+    loop_rate.sleep();
   }
 
   exit_out = true;
