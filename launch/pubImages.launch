@@ -5,7 +5,7 @@
     output="screen">
 
     <!-- IP of the Airsim computer -->
-    <param name="Airsim_ip" value="192.168.0.101"/>
+    <param name="Airsim_ip" value="127.0.0.1"/>
 
     <!-- Port of the Airsim computer (this is default, do not change!) -->
     <param name="Airsim_port" value="41451"/>
@@ -19,13 +19,12 @@
     <param name="height" value="270"/> <!-- Height when calibrated!-->
 
     <!-- Depth baseline -->
-    <param name="Tx" value="0.14"/> 
-    <param name="scale" value="0.38"/> 
+    <param name="Tx" value="0.14"/>
+    <param name="scale" value="0.38"/>
 
     <!-- Topic with odometry information for the vehicle (used to create tf tree) -->
     <param name="odomTopic" value="/mavros/local_position/odom"/>
 
-
   </node>
-</launch>
 
+</launch>
