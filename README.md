@@ -1,63 +1,86 @@
-# Disclaimer
-Most of the code in this repo was developed by Behzad Boroujerdian and Hasan Genc from the Department Of Electrical and Computer Engineering at The University of Texas at Austin. I put some finishing touches and wrote the guidelines below in the hope that this will be useful for others. This is supposed to be a preliminary solution while Microsoft don't provide an alternative one.
+# airsim_img_publisher
 
-# Contents
-This repo allows you to publish images from airsim into ROS.
+## Overview
+
+This repository is a fork of the [publishAirsimImgs](https://github.com/marcelinomalmeidan/publishAirsimImgs) repository by [Marcelino Almeida](https://github.com/marcelinomalmeidan). It is a preliminary solution to integrate ROS and AirSim plugin till Microsoft provides an alternative one.
+
 Features within this repo:
-- Publishes RGB data into the topic /Airsim/image
-- Publishes depth data into the topic /Airsim/depth
-- Publishes camera calibration parameters into /Airsim/camera_info
-- Publishes a tf tree with the origin, the position/orientation of the quadcoper, and the position/orientation of the camera.
+* Publishes rgb data into the topic /Airsim/image
+* Publishes depth data into the topic /Airsim/depth
+* Publishes camera calibration parameters into /Airsim/camera_info
+* Publishes a tf tree with the origin, the position/orientation of the quadcoper, and the position/orientation of the camera.
 
-## Dependencies
-This repo is supposed to run on Linux (only tested with Ubuntu 16.04, ROS Kinetic). 
+Most of the code was developed by Behzad Boroujerdian and Hasan Genc from the Department Of Electrical and Computer Engineering at The University of Texas at Austin.
 
-- Eigen
+The `airsim_img_publisher` package has been tested under ROS Kinetic and Ubuntu 16.04LTS. THe source code is released under [MIT Licence](LICENSE).
 
-      sudo apt-get install libeigen3-dev
+## Changelog
 
-- Then, you have to compile Airlib.
+* The header files have been renamed and shifted to the `include` directory
+* README modified for better understanding
 
-       cd ~ 
-       git clone https://github.com/Microsoft/AirSim.git  
+## Installation
 
-   - Replace the /Airsim/build.sh with the build.sh in /extras/ in the current repo.
-   - Replace the /Airsim/cmake/CMakeLists.txt with the CMakeLists1.txt in /extras/ in the current repo. Rename it to CMakeLists.txt.
-   - Replace the /Airsim/cmake/MavLinkCom/CMakeLists.txt with the CMakeLists2.txt in /extras/ in the current repo. Rename it to CMakeLists.txt.
-   - Run "build.sh" from Airsim's root directory.
-  
-- If you want the tf tree to be published, you will need mavros to communicate with px4 and get its pose. Then, you need to install mavros as follows:
+### Building from Source
 
-      sudo apt-get install ros-kinetic-mavros ros-kinetic-mavros-extras
+#### Dependencies
 
-  - In order to run mavros, you can follow the example in /launch/mavrosAirsim.launch. Note that you will have to change the fcu_url parameter to match the IP/Ports in which Airsim is running. All these informations can be found in the settings.json file for your Airsim configuration. The ports you are looking for are the "LogViewerPort" and the "UdpPort". Note that the settings.json file have to be configured such that "LogViewerHostIp" and "UdpIp" both have the IP of the computer that will run mavros. 
-  
-- Copy the present repo into your catkin workspace (e.g.):
+* [__Eigen__](http://eigen.tuxfamily.org/index.php?title=Main_Page)
+```
+sudo apt-get install libeigen3-dev
+```
+* [__AirSim__](https://github.com/Microsoft/AirSim): In order to link the client-side of the plugin with this project, build the fork of the plugin available [here](https://github.com/Mayankm96/AirSim_ROS)
+```
+cd ~/
+git clone https://github.com/Mayankm96/AirSim_ROS.git
+./setup.sh
+./build.sh
+```  
+* [__mavros__](http://wiki.ros.org/mavros): In order ti publish the `tf` tree, mavros is required to communicate with PX4 and get the pose
+```
+sudo apt-get install ros-kinetic-mavros ros-kinetic-mavros-extras
+```
+#### Building
+* To build from source, clone the latest version from this repository into your catkin workspace
+```
+cd ~/catkin_ws/src
+https://github.com/Mayankm96/airsim_img_publisher.git
+```
+* In order to run mavros, you can follow the example in [`mavrosAirsim.launch`](launch/mavrosAirsim.launch). Note that you will have to change the `fcu_url` parameter to match the IP/Ports in which Airsim is running. All these informations can be found in the `settings.json` file for your Airsim configuration. The ports you are looking for are the "LogViewerPort" and the "UdpPort". Note that the settings.json file have to be configured such that "LogViewerHostIp" and "UdpIp" both have the IP of the computer that will run mavros.
 
-      cd ~/catkin_ws/src
-      git clone https://github.com/marcelinomalmeidan/publishAirsimImgs.git
+* Set the correct paths to `AIRSIM_ROOT` and `AIRSIM_WS` in the [`CMakeLists.txt`](CMakeLists.txt) file.
 
-- Open the CMakeLists.txt and change the aliases for ```Airlib_addr``` and ```catkin_workspace_path``` to match your local Airlib folder and your local catkin workspace folder.
+* To compile the package:
+```
+cd ~/catkin_ws
+catkin_make
+```
 
-      cd ~/catkin_ws
-      catkin_make
+## Usage
 
-## Running image publisher
-- Run Airsim.
+Before running the nodes in the package, you need to run Airsim plugin in the Unreal Engine. In case you are unfamiliar on how to do so, refer to the tutorials available [here](https://github.com/Microsoft/AirSim#tutorials).
+
+### Running image publisher
 - Run mavros:
-
-      roslaunch airsim_img_publisher mavrosAirsim.launch
-
+```
+roslaunch airsim_img_publisher mavrosAirsim.launch
+```
 - Change the IP configuration in ```/launch/pubImages```  to match the IP in which Airsim is running. Then:
+```
+roslaunch airsim_img_publisher pubPointCloud.launch
+```
 
-      roslaunch airsim_img_publisher pubPointCloud.launch
+### Create octomap
+```
+roslaunch airsim_img_publisher octomap.launch
+```
+### RVIZ configuration file
 
-## Create octomap
+An RVIZ configuration file can be found in ```/rviz/rvizConfig.rviz```. This configuration allows a user to see the published images, as well as the tf tree.
+```
+rosrun rviz rviz -d ~/catkin_ws/src/publishAirsimImgs/extras/rvizConfig.rviz
+```
 
-      roslaunch airsim_img_publisher octomap.launch 
+## Nodes
 
-## RVIZ configuration file
-
-An RVIZ configuration file can be found in ```/Extras/rvizConfig.rviz```. This configuration allows a user to see the published images, as well as the tf tree.
-
-      rosrun rviz rviz -d ~/catkin_ws/src/publishAirsimImgs/extras/rvizConfig.rviz
+### imgPublisher
