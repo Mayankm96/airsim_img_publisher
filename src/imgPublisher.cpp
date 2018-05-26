@@ -39,9 +39,8 @@ void sigIntHandler(int sig)
     exit_out = true;
     std::cout << "killing the main thread" << std::endl;
 
-    std::string filename = ros::package::getPath("airsim_img_publisher") + "/src/debug.txt";
-
     std::ofstream myfile;
+    std::string filename = ros::package::getPath("airsim_img_publisher") + "/src/debug.txt";
     myfile.open(filename.c_str(), std::ofstream::app);
     myfile << "killing the main thread" << std::endl;
     myfile.close();
@@ -84,14 +83,14 @@ sensor_msgs::CameraInfo getCameraParams()
     return CameraParam;
 }
 
-void CameraPosePublisher(geometry_msgs::Pose CamPose, geometry_msgs::Pose CamPose_gt, const ros::Time& timestamp)
+void CameraPosePublisher(geometry_msgs::Pose CamPose, geometry_msgs::Pose CamPose_gt, geometry_msgs::Twist twist, const ros::Time& timestamp, const ros::Publisher &odom_pub)
 {
     static tf::TransformBroadcaster br;
     tf::Transform transformQuad, transformCamera;
     const double sqrt_2 = 1.41421356237;
     transformCamera.setOrigin(tf::Vector3(CamPose.position.y,
-                                          CamPose.position.x,
-                                          -CamPose.position.z));
+                                        CamPose.position.x,
+                                        -CamPose.position.z));
 
     geometry_msgs::Vector3 rpy =  quat2rpy(CamPose.orientation);
     rpy.y = -rpy.y;
@@ -106,30 +105,55 @@ void CameraPosePublisher(geometry_msgs::Pose CamPose, geometry_msgs::Pose CamPos
                                              q_cam.z,
                                              q_cam.w));
 
-    if (localization_method == "gps"){ //note that slam itself posts this transform
+    if (localization_method == "gps")
+    {   //note that slam itself posts this transform
         br.sendTransform(tf::StampedTransform(transformCamera, timestamp, "world", localization_method));
     }
 
     //ground truth values
     static tf::TransformBroadcaster br_gt;
+    static tf::TransformBroadcaster orig;
     tf::Transform transformQuad_gt, transformCamera_gt;
-    transformCamera_gt.setOrigin(tf::Vector3(CamPose_gt.position.y,
-                                        CamPose_gt.position.x,
+    tf::Transform transformOrig;
+    transformCamera_gt.setOrigin(tf::Vector3(CamPose_gt.position.x,
+                                        -CamPose_gt.position.y,
                                         -CamPose_gt.position.z));
 
-    geometry_msgs::Vector3 rpy_gt =  quat2rpy(CamPose_gt.orientation);
-    rpy_gt.y = -rpy_gt.y;
-    rpy_gt.z = -rpy_gt.z + M_PI/2.0;
 
-    geometry_msgs::Quaternion q_body2cam_gt = setQuat(0.5, -0.5, 0.5, -0.5);
+    transformOrig.setOrigin(tf::Vector3(CamPose_gt.position.x,
+                                        -CamPose_gt.position.y,
+                                        -CamPose_gt.position.z));
+    tf::Quaternion orientation(CamPose_gt.orientation.x, CamPose_gt.orientation.y, CamPose_gt.orientation.z, CamPose_gt.orientation.w);
+    tf::Quaternion OrigOrientation(CamPose_gt.orientation.x, CamPose_gt.orientation.y, CamPose_gt.orientation.z, CamPose_gt.orientation.w);
+    double oRoll, oPitch, oYaw;
+    tf::Matrix3x3(OrigOrientation).getRPY(oRoll, oPitch, oYaw);
+    tf::Quaternion rpy_quat = tf::createQuaternionFromRPY(oRoll, -oPitch, -oYaw);
+    tf::Quaternion rotated = tf::Quaternion(0, 0, 0.707, -0.707) * rpy_quat;
+    tf::Quaternion rotated_2 = tf::Quaternion(0.707, 0, 0, -0.707) * rotated;
+    transformOrig.setRotation(rpy_quat);
 
-    geometry_msgs::Quaternion q_cam_gt = rpy2quat(rpy_gt);
-    q_cam_gt = quatProd(q_body2cam_gt, q_cam_gt);
-    transformCamera_gt.setRotation(tf::Quaternion(q_cam_gt.x,
-                                             q_cam_gt.y,
-                                             q_cam_gt.z,
-                                             q_cam_gt.w));
-    br_gt.sendTransform(tf::StampedTransform(transformCamera_gt, timestamp, "world", "ground_truth"));
+    tf::Quaternion conv2flu(sin(M_PI/4), 0.0, sin(M_PI/4), 0.0);
+
+    conv2flu *= orientation;
+
+    transformCamera_gt.setRotation(orientation);
+    orig.sendTransform(tf::StampedTransform(transformOrig, timestamp, "world", "ground_truth"));
+
+    //publishodometry
+    nav_msgs::Odometry odom;
+    odom.header.stamp = timestamp;
+    odom.header.frame_id = "world";
+
+    odom.pose.pose.position.x = CamPose_gt.position.x;
+    odom.pose.pose.position.y = -CamPose_gt.position.y;
+    odom.pose.pose.position.z = -CamPose_gt.position.z;
+
+    odom.pose.pose.orientation = tf::createQuaternionMsgFromRollPitchYaw(oRoll, -oPitch, -oYaw);
+
+    odom.child_frame_id = "ground_truth";
+    odom.twist.twist = twist;
+
+    odom_pub.publish(odom);
 }
 
 void do_nothing()
@@ -151,6 +175,8 @@ int main(int argc, char **argv)
 
   //Publishers ---------------------------------------------------------------
   image_transport::ImageTransport it(n);
+
+  ros::Publisher odom_pub = n.advertise<nav_msgs::Odometry>("odom", 50);
 
   // image_transport::Publisher imgL_pub = it.advertise("/Airsim/left/image_raw", 1);
   image_transport::Publisher imgR_pub = it.advertise("/Airsim/right/image_raw", 1);
@@ -266,7 +292,7 @@ int main(int argc, char **argv)
     msgDepth_back->header.frame_id = localization_method;
 
     //Publish transforms into tf tree
-    CameraPosePublisher(imgs.pose, imgs.pose_gt, timestamp);
+    CameraPosePublisher(imgs.pose, imgs.pose_gt, imgs.twist, timestamp, odom_pub);
 
     //Publish images
     if (timestamp > last_timestamp)
