@@ -164,8 +164,9 @@ void AirSimClientWrapper::poll_frame(bool all_front)
 			  image_response_queue_mutex.unlock();
 
 			  client_mutex.unlock();
+
 			  ros::Time end_hook_t = ros::Time::now();
-			  ROS_INFO_STREAM("polling fram time"<< end_hook_t - start_hook_t);
+			  ROS_INFO_STREAM("polling frame time" << end_hook_t - start_hook_t);
 	    }
 	}
 	catch(...){
@@ -175,10 +176,11 @@ void AirSimClientWrapper::poll_frame(bool all_front)
 	}
 }
 
-void AirSimClientWrapper::do_nothing(void) {
-    while(true){
-        ;
-    }
+void AirSimClientWrapper::do_nothing(void)
+{
+  while(true){
+      ;
+  }
 }
 
 
@@ -187,6 +189,7 @@ struct image_response_decoded AirSimClientWrapper::image_decode(bool all_front)
   try
 	{
 		image_response_queue_mutex.lock();
+
 		if (image_response_queue.empty())
 		{
 		  image_response_queue_mutex.unlock();
@@ -197,6 +200,7 @@ struct image_response_decoded AirSimClientWrapper::image_decode(bool all_front)
 
 		struct image_response response = image_response_queue.back();
 		std::queue<struct image_response>().swap(image_response_queue);
+
 		image_response_queue_mutex.unlock();
 
 		struct image_response_decoded result;
@@ -265,11 +269,11 @@ struct image_response_decoded AirSimClientWrapper::image_decode(bool all_front)
 		result.timestamp = response.timestamp;
 
 		return result;
-    }
-    catch(...)
-		{
-      exit(0);
-    }
+  }
+  catch(...)
+	{
+    exit(0);
+  }
 }
 
 struct image_response_decoded AirSimClientWrapper::poll_frame_and_decode()

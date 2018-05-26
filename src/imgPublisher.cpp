@@ -110,7 +110,6 @@ void CameraPosePublisher(geometry_msgs::Pose CamPose, geometry_msgs::Pose CamPos
         br.sendTransform(tf::StampedTransform(transformCamera, timestamp, "world", localization_method));
     }
 
-
     //ground truth values
     static tf::TransformBroadcaster br_gt;
     tf::Transform transformQuad_gt, transformCamera_gt;
@@ -146,7 +145,7 @@ int main(int argc, char **argv)
   ros::init(argc, argv, "airsim_imgPublisher");
   ros::NodeHandle n;
 
-  double loop_rate_hz;
+  double loop_rate_hz = 50.0;
   ros::param::get("/airsim_imgPublisher/loop_rate", loop_rate_hz);
   ros::Rate loop_rate(loop_rate_hz);
 
@@ -176,7 +175,9 @@ int main(int argc, char **argv)
   uint16_t port = portParam;
 
   // Parameter for localizing camera
-  if(!ros::param::get("/airsim_imgPublisher/localization_method", localization_method)){
+  localization_method = "ground_truth";
+  if(!ros::param::get("/airsim_imgPublisher/localization_method", localization_method))
+  {
     ROS_FATAL_STREAM("you have not set the localization method");
     return -1;
   }
@@ -221,8 +222,8 @@ int main(int argc, char **argv)
     ros::Time timestamp(timestamp_s, timestamp_ns);
     if(imgs.timestamp != uint64_t(timestamp_s)*1000000000 + timestamp_ns)
     {
-        std::cout<<"---------------------failed"<<std::setprecision(30)<<imgs.timestamp<< "!="
-                 <<std::setprecision(30)<<timestamp_s*1000000000 + timestamp_ns<<std::endl;
+        std::cout << "---------------------failed" << std::setprecision(30) << imgs.timestamp << "!="
+                  << std::setprecision(30) << timestamp_s*1000000000 + timestamp_ns << std::endl;
         ROS_ERROR_STREAM("coversion in img publisher failed");
     }
 
@@ -277,13 +278,15 @@ int main(int argc, char **argv)
       imgParamR_pub.publish(msgCameraInfo);
       imgParamDepth_pub.publish(msgCameraInfo);
       disparity_pub.publish(disparityImg);
+
       timestamp = last_timestamp;
     }
 
-    ros::Time end_hook_t = ros::Time::now();
-    //ROS_INFO_STREAM("decoding and publishing fram time"<< end_hook_t - start_hook_t);
-
     ros::spinOnce();
+
+    ros::Time end_hook_t = ros::Time::now();
+    ROS_INFO_STREAM("decoding and publishing fram time"<< end_hook_t - start_hook_t);
+
     loop_rate.sleep();
   }
 

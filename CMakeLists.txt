@@ -3,11 +3,13 @@ cmake_minimum_required(VERSION 2.8.3)
 project(airsim_img_publisher)
 
 # Path to catkin workspace
-set(AIRSIM_WS "/home/mayankm/ais_valada/fount_landing/airsim_ws")
+# set(AIRSIM_WS "/home/mayankm/ais_valada/fount_landing/airsim_ws")
+set(AIRSIM_WS "/export/airsim/fount_landing/airsim_ws")
 message(STATUS " AIRSIM_WS: ${AIRSIM_WS}")
 
 # Path to AirSim repository compiled with g++
-set(AIRSIM_ROOT "/home/mayankm/AirSim_ROS")
+# set(AIRSIM_ROOT "/home/mayankm/AirSim_ROS")
+set(AIRSIM_ROOT "/export/airsim/AirSim_ROS")
 message(STATUS " AIRSIM_ROOT: ${AIRSIM_ROOT}")
 
 ## Compile as C++11, supported in ROS Kinetic and newer
@@ -37,15 +39,17 @@ find_package(PCL    REQUIRED)
 ###################################
 ## catkin specific configuration ##
 ###################################
-catkin_package( CATKIN_DEPENDS
-	roscpp
-	rospy
-	std_msgs
-	sensor_msgs
-	nav_msgs
-	image_transport
-	cv_bridge
-	tf
+catkin_package(
+	INCLUDE_DIRS include
+	CATKIN_DEPENDS
+		roscpp
+		rospy
+		std_msgs
+		sensor_msgs
+		nav_msgs
+		image_transport
+		cv_bridge
+		tf
 )
 
 ###########
@@ -54,11 +58,12 @@ catkin_package( CATKIN_DEPENDS
 include_directories(
   ${AIRSIM_ROOT}/AirLib/include
   ${AIRSIM_ROOT}/AirLib/include/controllers
-  ${AIRSIM_ROOT}/AirLib/deps/MavLinkCom/include
-  ${AIRSIM_ROOT}/AirLib/deps/rpclib/include
+  # ${AIRSIM_ROOT}/AirLib/deps/MavLinkCom/include
+  # ${AIRSIM_ROOT}/AirLib/deps/rpclib/include
   ${EIGEN3_INCLUDE_DIR}
   ${catkin_INCLUDE_DIRS}
   ${PCL_INCLUDE_DIRS}
+	${OpenCV_INCLUDE_DIRS}
   #/usr/local/cuda/include/
   include
 )
