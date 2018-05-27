@@ -5,19 +5,20 @@
 This repository is a fork of the [publishAirsimImgs](https://github.com/marcelinomalmeidan/publishAirsimImgs) repository by [Marcelino Almeida](https://github.com/marcelinomalmeidan). It is a preliminary solution to integrate ROS and AirSim plugin till Microsoft provides an alternative one.
 
 Features within this repo:
-* Publishes rgb data into the topic `/airsim/right/image_raw`
+* Publishes rgb data into the topic `/airsim/rgb/image_raw`
 * Publishes depth data into the topic `/airsim/depth_front`
 * Publishes camera calibration parameters into `/airsim/depth/camera_info`
 * Publishes a tf tree with the origin, the position/orientation of the quadcoper, and the position/orientation of the camera.
 
-Most of the code was developed by Behzad Boroujerdian and Hasan Genc from the Department Of Electrical and Computer Engineering at The University of Texas at Austin.
-
-The `airsim_img_publisher` package has been tested under ROS Kinetic and Ubuntu 16.04LTS. THe source code is released under [MIT Licence](LICENSE).
+The `airsim_img_publisher` package has been tested under ROS Kinetic and Ubuntu 16.04LTS. The source code is released under [MIT Licence](LICENSE).
 
 ## Changelog
 
 * The header files have been renamed and shifted to the `include` directory
+* Fixed bugs in the code
 * README modified for better understanding
+* Another transform has been added from the drone's `base_frame_id` frame to `camera_frame_id`
+* Changed the names of topics that are published
 
 ## Installation
 
@@ -40,6 +41,7 @@ git clone https://github.com/Mayankm96/AirSim_ROS.git
 ```
 sudo apt-get install ros-kinetic-mavros ros-kinetic-mavros-extras
 ```
+
 #### Building
 * To build from source, clone the latest version from this repository into your catkin workspace
 ```

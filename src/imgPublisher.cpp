@@ -15,7 +15,6 @@
 #include <image_transport/image_transport.h>
 #include <cv_bridge/cv_bridge.h>
 #include <nav_msgs/Odometry.h>
-#include "stereo_msgs/DisparityImage.h"
 // airsim
 #include "common/Common.hpp"
 #include "vehicles/multirotor/api/MultirotorRpcLibClient.hpp"
@@ -124,26 +123,29 @@ int main(int argc, char **argv)
       all_front = false;
   }
 
+  // tf tree frame names
+  std::string camera_frame_id, base_frame_id;
+  ros::param::param<std::string>("~camera_frame_id", camera_frame_id, "camera_frame");
+  ros::param::param<std::string>("~base_frame_id", base_frame_id, "base_link");
+
   // camera paramters
-  sensor_msgs::CameraInfo msgCameraInfo = getCameraParams(localization_method);
+  sensor_msgs::CameraInfo msgCameraInfo = getCameraParams(camera_frame_id);
 
   // Publishers ---------------------------------------------------------------
   image_transport::ImageTransport it(n);
 
-  // image_transport::Publisher imgL_pub = it.advertise("/Airsim/left/image_raw", 1);
-  image_transport::Publisher imgR_pub = it.advertise("/airsim/right/image_raw", 1);
+  image_transport::Publisher rgb_pub = it.advertise("/airsim/rgb/image_raw", 1);
   image_transport::Publisher depth_pub_front = it.advertise("/airsim/depth_front", 1);
   image_transport::Publisher depth_pub_back = it.advertise("/airsim/depth_back", 1);
 
   ros::Publisher imgParamL_pub = n.advertise<sensor_msgs::CameraInfo> ("/airsim/camera_info", 1);
   ros::Publisher imgParamR_pub = n.advertise<sensor_msgs::CameraInfo> ("/airsim/right/camera_info", 1);
   ros::Publisher imgParamDepth_pub = n.advertise<sensor_msgs::CameraInfo> ("/airsim/depth/camera_info", 1);
-  ros::Publisher disparity_pub = n.advertise<stereo_msgs::DisparityImage> ("/airsim/disparity", 1);
 
   ros::Publisher odom_pub = n.advertise<nav_msgs::Odometry>("/odom", 50);
 
   //ROS Messages
-  sensor_msgs::ImagePtr msgImgL, msgImgR, msgDepth_front, msgDepth_back;
+  sensor_msgs::ImagePtr msgImgRgb, msgDepth_front, msgDepth_back;
 
   //Main ---------------------------------------------------------------
 
@@ -176,69 +178,46 @@ int main(int argc, char **argv)
         ROS_ERROR_STREAM("coversion in img publisher failed");
     }
 
-    cv::Mat disparityImageMat;
-    imgs.depth_front.convertTo(disparityImageMat, CV_8UC1);
-    imgs.depth_back.convertTo(disparityImageMat, CV_8UC1);
-    stereo_msgs::DisparityImage disparityImg;
-
-    disparityImg.header.stamp = timestamp;
-    disparityImg.header.frame_id = localization_method;
-    disparityImg.f = 128; //focal length, half of the image width
-    disparityImg.T = .14; //baseline, half of the distance between the two cameras
-    disparityImg.min_disparity = .44; // f.t/z(depth max)
-    disparityImg.max_disparity = 179; // f.t/z(depth min)
-    disparityImg.delta_d = .018; //possibly change
-    disparityImg.image = *(cv_bridge::CvImage(std_msgs::Header(), "8UC1", disparityImageMat).toImageMsg());
-    disparityImg.valid_window.x_offset = 0;
-    disparityImg.valid_window.y_offset = 0;
-    disparityImg.valid_window.height =  144;
-    disparityImg.valid_window.width =  256;
-    disparityImg.valid_window.do_rectify =  false; //possibly change
-
     // *** F:DN conversion of opencv images to ros images
-    // msgImgL = cv_bridge::CvImage(std_msgs::Header(), "bgr8", imgs.left).toImageMsg();
-    msgImgR = cv_bridge::CvImage(std_msgs::Header(), "bgr8", imgs.right).toImageMsg();
+    msgImgRgb = cv_bridge::CvImage(std_msgs::Header(), "bgr8", imgs.right).toImageMsg();
     msgDepth_front = cv_bridge::CvImage(std_msgs::Header(), "32FC1", imgs.depth_front).toImageMsg();
     msgDepth_back = cv_bridge::CvImage(std_msgs::Header(), "32FC1", imgs.depth_back).toImageMsg();
 
     //Stamp messages
+    msgCameraInfo.header.frame_id = camera_frame_id;
     msgCameraInfo.header.stamp = timestamp;
-    // msgImgL->header.stamp = msgCameraInfo.header.stamp;
-    msgImgR->header.stamp = msgCameraInfo.header.stamp;
-    msgDepth_front->header.stamp =  msgCameraInfo.header.stamp;
-    msgDepth_back->header.stamp =  msgCameraInfo.header.stamp;
+    msgImgRgb->header = msgCameraInfo.header;
+    msgDepth_front->header =  msgCameraInfo.header;
+    msgDepth_back->header =  msgCameraInfo.header;
 
-    // Set the frame ids
-    msgDepth_front->header.frame_id = localization_method;
-    msgDepth_back->header.frame_id = localization_method;
-
-    //Publish images
     if (timestamp > last_timestamp)
     {
-      imgR_pub.publish(msgImgR);
+      //Publish images
+      rgb_pub.publish(msgImgRgb);
       depth_pub_front.publish(msgDepth_front);
       depth_pub_back.publish(msgDepth_back);
       imgParamL_pub.publish(msgCameraInfo);
       imgParamR_pub.publish(msgCameraInfo);
       imgParamDepth_pub.publish(msgCameraInfo);
-      disparity_pub.publish(disparityImg);
 
-      timestamp = last_timestamp;
+      //Publish transforms into tf tree
+      fakeStaticCamPosePublisher(base_frame_id, camera_frame_id, timestamp);
+      if(localization_method == "gps")
+        gpsPosePublisher(imgs.pose, timestamp, base_frame_id);
+      else
+        groundTruthPosePublisher(imgs.pose_gt, timestamp, base_frame_id);
+
+      // Publish odometry messages
+      odomPublisher(imgs.pose_gt, imgs.twist, timestamp, odom_pub, base_frame_id);
+
+      // Update time sequence
+      last_timestamp = timestamp;
     }
-
-    //Publish transforms into tf tree
-    if(localization_method == "gps")
-      gpsPosePublisher(imgs.pose, timestamp, "gps");
-    else
-      groundTruthPosePublisher(imgs.pose_gt, timestamp, "ground_truth");
-
-    // Publish odometry messages
-    odomPublisher(imgs.pose_gt, imgs.twist, timestamp, odom_pub, "ground_truth");
 
     ros::spinOnce();
 
     ros::Time end_hook_t = ros::Time::now();
-    ROS_INFO_STREAM("Decoding and publishing frame time: "<< end_hook_t - start_hook_t);
+    ROS_INFO_STREAM("Decoding and publishing frame time: " << end_hook_t - start_hook_t);
 
     loop_rate.sleep();
   }
