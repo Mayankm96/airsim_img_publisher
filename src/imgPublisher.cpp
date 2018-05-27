@@ -52,13 +52,13 @@ sensor_msgs::CameraInfo getCameraParams(std::string frame)
     sensor_msgs::CameraInfo CameraParam;
 
     // Read camera parameters from launch file
-    ros::param::get("Tx",Tx);
-    ros::param::get("Fx",Fx);
-    ros::param::get("Fy",Fy);
-    ros::param::get("cx",cx);
-    ros::param::get("cy",cy);
-    ros::param::get("width", width);
-    ros::param::get("height", height);
+    ros::param::get("~Tx", Tx);
+    ros::param::get("~Fx", Fx);
+    ros::param::get("~Fy", Fy);
+    ros::param::get("~cx", cx);
+    ros::param::get("~cy", cy);
+    ros::param::get("~width", width);
+    ros::param::get("~height", height);
 
     CameraParam.header.frame_id = frame;
     CameraParam.height = height;
@@ -91,20 +91,20 @@ int main(int argc, char **argv)
 
   // loop rate
   double loop_rate_hz;  // loop rate (in Hz)
-  ros::param::param<double>("loop_rate", loop_rate_hz, 50);
+  ros::param::param<double>("~loop_rate", loop_rate_hz, 50);
   ros::Rate loop_rate(loop_rate_hz);
 
   // communicating with Airsim
   string ip_addr; // server IP address
   int portParam;  // server port
-  ros::param::param<std::string>("Airsim_ip",ip_addr, "127.0.0.1");
-  ros::param::param<int>("Airsim_port", portParam, 41451);
+  ros::param::param<std::string>("~Airsim_ip",ip_addr, "127.0.0.1");
+  ros::param::param<int>("~Airsim_port", portParam, 41451);
   // type cast port to uint16 format
   uint16_t port = portParam;
 
   // localizing camera
   std::string localization_method;
-  if(! ros::param::get("localization_method", localization_method))
+  if(! ros::param::get("~localization_method", localization_method))
   {
     ROS_WARN("Using default locatization method: ground_truth");
     localization_method = "ground_truth";
@@ -118,7 +118,7 @@ int main(int argc, char **argv)
 
   // camera ID (front or back)
   bool all_front;
-  if (! ros::param::get("all_front",all_front))
+  if (! ros::param::get("~all_front", all_front))
   {
       ROS_WARN("Using default value for all_front: false ");
       all_front = false;
@@ -135,7 +135,7 @@ int main(int argc, char **argv)
   image_transport::Publisher depth_pub_front = it.advertise("/airsim/depth_front", 1);
   image_transport::Publisher depth_pub_back = it.advertise("/airsim/depth_back", 1);
 
-  ros::Publisher imgParamL_pub = n.advertise<sensor_msgs::CameraInfo> ("/airsim/left/camera_info", 1);
+  ros::Publisher imgParamL_pub = n.advertise<sensor_msgs::CameraInfo> ("/airsim/camera_info", 1);
   ros::Publisher imgParamR_pub = n.advertise<sensor_msgs::CameraInfo> ("/airsim/right/camera_info", 1);
   ros::Publisher imgParamDepth_pub = n.advertise<sensor_msgs::CameraInfo> ("/airsim/depth/camera_info", 1);
   ros::Publisher disparity_pub = n.advertise<stereo_msgs::DisparityImage> ("/airsim/disparity", 1);

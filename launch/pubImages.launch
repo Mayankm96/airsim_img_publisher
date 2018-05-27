@@ -5,8 +5,8 @@
 
   <node pkg="airsim_img_publisher"
     type="airsim_imgPublisher"
-    name="airsim_imgPublisher"
-    output="screen">
+    name="airsim_imgPublisher" 
+    output="screen" >
 
     <!-- IP of the Airsim computer -->
     <param name="Airsim_ip" value="$(arg Airsim_ip)"/>
