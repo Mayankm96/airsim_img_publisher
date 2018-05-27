@@ -1,50 +1,19 @@
 <launch>
-  <node pkg="airsim_img_publisher"
-    type="airsim_imgPublisher"
-    name="airsim_imgPublisher"
-    output="screen">
 
-    <!-- IP of the Airsim computer -->
-    <param name="Airsim_ip" value="127.0.0.1"/>
-
-    <!-- Port of the Airsim computer (this is default, do not change!) -->
-    <param name="Airsim_port" value="41451"/>
-
-    <!-- RGB camera parameters (parameters when calibrated) -->
-    <param name="Fx" value="360"/>
-    <param name="Fy" value="360"/>
-    <param name="cx" value="360"/>
-    <param name="cy" value="240"/>
-    <param name="width" value="640"/>  <!-- Width when calibrated!-->
-    <param name="height" value="480"/> <!-- Height when calibrated!-->
-
-    <!-- Depth baseline -->
-    <param name="Tx" value="0.14"/>
-    <param name="scale" value="0.38"/>
-    <param name="maxDist" value="20.0"/>
-
-    <!-- other params -->
-    <param name="localization_method" value="ground_truth"/>
-    <param name="all_front" value="false"/>
-    <param name="loop_rate" value="50"/>
-
-    <!-- Topic with odometry information for the vehicle (used to create tf tree) -->
-    <param name="odomTopic" value="/mavros/local_position/odom"/>
-  </node>
-
+    <!-- Node to publish images from airsim client node -->
+    <include file="$(find airsim_img_publisher)/launch/pubImages.launch"/>
 
     <!-- Nodelet manager for this pipeline -->
-    <node pkg="nodelet" type="nodelet" args="manager" name="depth_transforms_manager" output="screen"/>
+    <node pkg="nodelet" type="nodelet" args="manager" name="airsim_depth_transforms_manager" output="screen"/>
 
      <!-- Convert to point cloud -->
-    <node pkg="nodelet" type="nodelet" name="cloudify"
+    <node pkg="nodelet" type="nodelet" name="airsim_cloudify"
     args="load depth_image_proc/point_cloud_xyz depth_transforms_manager --no-bond">
 
         <!-- Input: Camera calibration and metadata.  (sensor_msgs/CameraInfo) -->
-        <remap from="rgb/camera_info" to="/Airsim/depth/camera_info"/>
+        <remap from="camera_info" to="/airsim/depth/camera_info"/>
         <!-- Input: Rectified depth image -->
-        <remap from="image_rect" to="/Airsim/depth_front"/>
-
+        <remap from="image_rect" to="/airsim/depth_front"/>
     </node>
 
 </launch>
