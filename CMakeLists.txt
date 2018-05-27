@@ -2,11 +2,6 @@ cmake_minimum_required(VERSION 2.8.3)
 
 project(airsim_img_publisher)
 
-# Path to catkin workspace
-# set(AIRSIM_WS "/home/mayankm/ais_valada/fount_landing/airsim_ws")
-set(AIRSIM_WS "/export/airsim/fount_landing/airsim_ws")
-message(STATUS " AIRSIM_WS: ${AIRSIM_WS}")
-
 # Path to AirSim repository compiled with g++
 # set(AIRSIM_ROOT "/home/mayankm/AirSim_ROS")
 set(AIRSIM_ROOT "/export/airsim/AirSim_ROS")
@@ -85,6 +80,7 @@ add_executable(airsim_imgPublisher
   src/airsim_img_publisher/AirSimClientWrapper.cpp
   src/airsim_img_publisher/QuatRotEuler.cpp
   src/airsim_img_publisher/TfCallback.cpp
+  src/airsim_img_publisher/ImageProcessing.cpp
 )
 
 target_link_libraries(airsim_imgPublisher

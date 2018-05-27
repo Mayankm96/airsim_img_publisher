@@ -18,44 +18,6 @@ std::queue<struct image_response> image_response_queue;
 std::mutex client_mutex;
 volatile bool exit_out = false;
 
-static void convertToPlanDepth(const cv::Mat& input, cv::Mat& output, float f = 128)
-{
-	int width = input.cols;
-	int height = input.rows;
-
-	float center_i = width / 2.0f - 1;
-	float center_j = height / 2.0f - 1;
-
-	for (int i = 0; i < width; ++i)
-	{
-		for (int j = 0; j < height; ++j)
-		{
-			float dist = std::sqrt((i - center_i)*(i - center_i) + (j - center_j)*(j - center_j));
-			float denom = (dist / f);
-			denom *= denom;
-			denom = std::sqrt(1 + denom);
-			output.at<float>(j, i) = input.at<float>(j, i) / denom;
-		}
-	}
-}
-
-static void convertToDisparity(const cv::Mat& input, cv::Mat& output, float f = 128, float baseline_meters = 0.14)
-{
-	int width = input.cols;
-	int height = input.rows;
-	int size = width * height;
-
-	output = cv::Mat(height, width, CV_32FC1);
-
-	for (int i = 0; i < width; ++i)
-	{
-		for (int j = 0; j < height; ++j)
-		{
-			output.at<float>(j, i) = f * baseline_meters / input.at<float>(j, i);
-		}
-	}
-}
-
 AirSimClientWrapper::AirSimClientWrapper() : client_(0), localization_method_("ground_truth"), ip_addr_("not provided"), port_(000)
 {
 	connect();
@@ -166,7 +128,7 @@ void AirSimClientWrapper::poll_frame(bool all_front)
 			  client_mutex.unlock();
 
 			  ros::Time end_hook_t = ros::Time::now();
-			  ROS_INFO_STREAM("polling frame time" << end_hook_t - start_hook_t);
+			  ROS_INFO_STREAM("Polling frame time: " << end_hook_t - start_hook_t);
 	    }
 	}
 	catch(...){

@@ -8,7 +8,7 @@
 
      <!-- Convert to point cloud -->
     <node pkg="nodelet" type="nodelet" name="airsim_cloudify"
-    args="load depth_image_proc/point_cloud_xyz depth_transforms_manager --no-bond">
+    args="load depth_image_proc/point_cloud_xyz airsim_depth_transforms_manager --no-bond">
 
         <!-- Input: Camera calibration and metadata.  (sensor_msgs/CameraInfo) -->
         <remap from="camera_info" to="/airsim/depth/camera_info"/>

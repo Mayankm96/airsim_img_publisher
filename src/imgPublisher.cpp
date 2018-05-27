@@ -14,7 +14,6 @@
 #include <ros/package.h>
 #include <image_transport/image_transport.h>
 #include <cv_bridge/cv_bridge.h>
-#include "std_msgs/String.h"
 #include <nav_msgs/Odometry.h>
 #include "stereo_msgs/DisparityImage.h"
 // airsim
@@ -23,10 +22,10 @@
 // include
 #include "airsim_img_publisher/AirSimClientWrapper.h"
 #include "airsim_img_publisher/TfCallback.h"
+#include "airsim_img_publisher/ImageProcessing.h"
 
 using namespace std;
 
-string localization_method;
 extern std::mutex client_mutex;
 extern volatile bool exit_out;
 
@@ -47,22 +46,21 @@ void sigIntHandler(int sig)
     // client_mutex.unlock();
 }
 
-sensor_msgs::CameraInfo getCameraParams()
+sensor_msgs::CameraInfo getCameraParams(std::string frame)
 {
     double Tx, Fx, Fy, cx, cy, width, height;
     sensor_msgs::CameraInfo CameraParam;
 
     // Read camera parameters from launch file
-    ros::param::get("/airsim_imgPublisher/Tx",Tx);
-    ros::param::get("/airsim_imgPublisher/Fx",Fx);
-    ros::param::get("/airsim_imgPublisher/Fy",Fy);
-    ros::param::get("/airsim_imgPublisher/cx",cx);
-    ros::param::get("/airsim_imgPublisher/cy",cy);
-    ros::param::get("/airsim_imgPublisher/scale_x",width);
-    ros::param::get("/airsim_imgPublisher/scale_y",height);
+    ros::param::get("Tx",Tx);
+    ros::param::get("Fx",Fx);
+    ros::param::get("Fy",Fy);
+    ros::param::get("cx",cx);
+    ros::param::get("cy",cy);
+    ros::param::get("width", width);
+    ros::param::get("height", height);
 
-    //CameraParam.header.frame_id = "camera";
-    CameraParam.header.frame_id = localization_method;
+    CameraParam.header.frame_id = frame;
     CameraParam.height = height;
     CameraParam.width = width;
     CameraParam.distortion_model = "plumb_bob";
@@ -83,152 +81,76 @@ sensor_msgs::CameraInfo getCameraParams()
     return CameraParam;
 }
 
-void CameraPosePublisher(geometry_msgs::Pose CamPose, geometry_msgs::Pose CamPose_gt, geometry_msgs::Twist twist, const ros::Time& timestamp, const ros::Publisher &odom_pub)
-{
-    static tf::TransformBroadcaster br;
-    tf::Transform transformQuad, transformCamera;
-    const double sqrt_2 = 1.41421356237;
-    transformCamera.setOrigin(tf::Vector3(CamPose.position.y,
-                                        CamPose.position.x,
-                                        -CamPose.position.z));
-
-    geometry_msgs::Vector3 rpy =  quat2rpy(CamPose.orientation);
-    rpy.y = -rpy.y;
-    rpy.z = -rpy.z + M_PI/2.0;
-
-    geometry_msgs::Quaternion q_body2cam = setQuat(0.5, -0.5, 0.5, -0.5);
-
-    geometry_msgs::Quaternion q_cam = rpy2quat(rpy);
-    q_cam = quatProd(q_body2cam, q_cam);
-    transformCamera.setRotation(tf::Quaternion(q_cam.x,
-                                             q_cam.y,
-                                             q_cam.z,
-                                             q_cam.w));
-
-    if (localization_method == "gps")
-    {   //note that slam itself posts this transform
-        br.sendTransform(tf::StampedTransform(transformCamera, timestamp, "world", localization_method));
-    }
-
-    //ground truth values
-    static tf::TransformBroadcaster br_gt;
-    static tf::TransformBroadcaster orig;
-    tf::Transform transformQuad_gt, transformCamera_gt;
-    tf::Transform transformOrig;
-    transformCamera_gt.setOrigin(tf::Vector3(CamPose_gt.position.x,
-                                        -CamPose_gt.position.y,
-                                        -CamPose_gt.position.z));
-
-
-    transformOrig.setOrigin(tf::Vector3(CamPose_gt.position.x,
-                                        -CamPose_gt.position.y,
-                                        -CamPose_gt.position.z));
-    tf::Quaternion orientation(CamPose_gt.orientation.x, CamPose_gt.orientation.y, CamPose_gt.orientation.z, CamPose_gt.orientation.w);
-    tf::Quaternion OrigOrientation(CamPose_gt.orientation.x, CamPose_gt.orientation.y, CamPose_gt.orientation.z, CamPose_gt.orientation.w);
-    double oRoll, oPitch, oYaw;
-    tf::Matrix3x3(OrigOrientation).getRPY(oRoll, oPitch, oYaw);
-    tf::Quaternion rpy_quat = tf::createQuaternionFromRPY(oRoll, -oPitch, -oYaw);
-    tf::Quaternion rotated = tf::Quaternion(0, 0, 0.707, -0.707) * rpy_quat;
-    tf::Quaternion rotated_2 = tf::Quaternion(0.707, 0, 0, -0.707) * rotated;
-    transformOrig.setRotation(rpy_quat);
-
-    tf::Quaternion conv2flu(sin(M_PI/4), 0.0, sin(M_PI/4), 0.0);
-
-    conv2flu *= orientation;
-
-    transformCamera_gt.setRotation(orientation);
-    orig.sendTransform(tf::StampedTransform(transformOrig, timestamp, "world", "ground_truth"));
-
-    //publishodometry
-    nav_msgs::Odometry odom;
-    odom.header.stamp = timestamp;
-    odom.header.frame_id = "world";
-
-    odom.pose.pose.position.x = CamPose_gt.position.x;
-    odom.pose.pose.position.y = -CamPose_gt.position.y;
-    odom.pose.pose.position.z = -CamPose_gt.position.z;
-
-    odom.pose.pose.orientation = tf::createQuaternionMsgFromRollPitchYaw(oRoll, -oPitch, -oYaw);
-
-    odom.child_frame_id = "ground_truth";
-    odom.twist.twist = twist;
-
-    odom_pub.publish(odom);
-}
-
-void do_nothing()
-{
-    return;
-}
-//std::thread poll_frame_thread(do_nothing);
-
-
 int main(int argc, char **argv)
 {
   //Start ROS ----------------------------------------------------------------
   ros::init(argc, argv, "airsim_imgPublisher");
-  ros::NodeHandle n;
+  ros::NodeHandle n("~");
 
-  double loop_rate_hz = 50.0;
-  ros::param::get("/airsim_imgPublisher/loop_rate", loop_rate_hz);
+  //Parameters ---------------------------------------------------------------
+
+  // loop rate
+  double loop_rate_hz;  // loop rate (in Hz)
+  ros::param::param<double>("loop_rate", loop_rate_hz, 50);
   ros::Rate loop_rate(loop_rate_hz);
 
-  //Publishers ---------------------------------------------------------------
-  image_transport::ImageTransport it(n);
-
-  ros::Publisher odom_pub = n.advertise<nav_msgs::Odometry>("odom", 50);
-
-  // image_transport::Publisher imgL_pub = it.advertise("/Airsim/left/image_raw", 1);
-  image_transport::Publisher imgR_pub = it.advertise("/Airsim/right/image_raw", 1);
-  image_transport::Publisher depth_pub_front = it.advertise("/Airsim/depth_front", 1);
-  image_transport::Publisher depth_pub_back = it.advertise("/Airsim/depth_back", 1);
-
-
-  ros::Publisher imgParamL_pub = n.advertise<sensor_msgs::CameraInfo> ("/Airsim/left/camera_info", 1);
-  ros::Publisher imgParamR_pub = n.advertise<sensor_msgs::CameraInfo> ("/Airsim/right/camera_info", 1);
-  ros::Publisher imgParamDepth_pub = n.advertise<sensor_msgs::CameraInfo> ("/Airsim/depth/camera_info", 1);
-  ros::Publisher disparity_pub = n.advertise<stereo_msgs::DisparityImage> ("/Airsim/disparity", 1);
-
-  //ROS Messages
-  sensor_msgs::ImagePtr msgImgL, msgImgR, msgDepth_front, msgDepth_back;
-  sensor_msgs::CameraInfo msgCameraInfo;
-
-  //Parameters for communicating with Airsim
-  string ip_addr;
-  int portParam;
-  ros::param::get("/airsim_imgPublisher/Airsim_ip",ip_addr);
-  ros::param::get("/airsim_imgPublisher/Airsim_port", portParam);
+  // communicating with Airsim
+  string ip_addr; // server IP address
+  int portParam;  // server port
+  ros::param::param<std::string>("Airsim_ip",ip_addr, "127.0.0.1");
+  ros::param::param<int>("Airsim_port", portParam, 41451);
+  // type cast port to uint16 format
   uint16_t port = portParam;
 
-  // Parameter for localizing camera
-  localization_method = "ground_truth";
-  if(!ros::param::get("/airsim_imgPublisher/localization_method", localization_method))
+  // localizing camera
+  std::string localization_method;
+  if(! ros::param::get("localization_method", localization_method))
   {
-    ROS_FATAL_STREAM("you have not set the localization method");
-    return -1;
+    ROS_WARN("Using default locatization method: ground_truth");
+    localization_method = "ground_truth";
   }
 
-  //this connects us to the drone
-  //client = new msr::airlib::MultirotorRpcLibClient(ip_addr, port);
-  //client->enableApiControl(false);
-
-  //Verbose
+  // Verbose
   ROS_INFO("Image publisher started! Connecting to:");
   ROS_INFO("IP: %s", ip_addr.c_str());
   ROS_INFO("Port: %d", port);
+  ROS_INFO("Localization Method: %s", localization_method.c_str());
 
-  //Local variables
-  AirSimClientWrapper input_sample__obj(ip_addr.c_str(), port, localization_method);
-  msgCameraInfo = getCameraParams();
-
-  bool all_front = false;
-  if (!ros::param::get("/airsim_imgPublisher/all_front",all_front)){
-      ROS_ERROR_STREAM("all front is not defined for airsim_imgPublisher");
-      exit(0);
+  // camera ID (front or back)
+  bool all_front;
+  if (! ros::param::get("all_front",all_front))
+  {
+      ROS_WARN("Using default value for all_front: false ");
+      all_front = false;
   }
 
-  std::thread poll_frame_thread(&AirSimClientWrapper::poll_frame,
-          &input_sample__obj, all_front);
+  // camera paramters
+  sensor_msgs::CameraInfo msgCameraInfo = getCameraParams(localization_method);
+
+  // Publishers ---------------------------------------------------------------
+  image_transport::ImageTransport it(n);
+
+  // image_transport::Publisher imgL_pub = it.advertise("/Airsim/left/image_raw", 1);
+  image_transport::Publisher imgR_pub = it.advertise("/airsim/right/image_raw", 1);
+  image_transport::Publisher depth_pub_front = it.advertise("/airsim/depth_front", 1);
+  image_transport::Publisher depth_pub_back = it.advertise("/airsim/depth_back", 1);
+
+  ros::Publisher imgParamL_pub = n.advertise<sensor_msgs::CameraInfo> ("/airsim/left/camera_info", 1);
+  ros::Publisher imgParamR_pub = n.advertise<sensor_msgs::CameraInfo> ("/airsim/right/camera_info", 1);
+  ros::Publisher imgParamDepth_pub = n.advertise<sensor_msgs::CameraInfo> ("/airsim/depth/camera_info", 1);
+  ros::Publisher disparity_pub = n.advertise<stereo_msgs::DisparityImage> ("/airsim/disparity", 1);
+
+  ros::Publisher odom_pub = n.advertise<nav_msgs::Odometry>("/odom", 50);
+
+  //ROS Messages
+  sensor_msgs::ImagePtr msgImgL, msgImgR, msgDepth_front, msgDepth_back;
+
+  //Main ---------------------------------------------------------------
+
+  //Local variables
+  AirSimClientWrapper airsim_sampler(ip_addr.c_str(), port, localization_method);
+
+  std::thread poll_frame_thread(&AirSimClientWrapper::poll_frame, &airsim_sampler, all_front);
   signal(SIGINT, sigIntHandler);
 
   // *** F:DN end of communication with simulator (Airsim)
@@ -237,8 +159,9 @@ int main(int argc, char **argv)
   {
     ros::Time start_hook_t = ros::Time::now();
 
-    auto imgs = input_sample__obj.image_decode(all_front);
-    if (!imgs.valid_data) {
+    auto imgs = airsim_sampler.image_decode(all_front);
+    if (!imgs.valid_data)
+    {
         continue;
     }
 
@@ -257,11 +180,9 @@ int main(int argc, char **argv)
     imgs.depth_front.convertTo(disparityImageMat, CV_8UC1);
     imgs.depth_back.convertTo(disparityImageMat, CV_8UC1);
     stereo_msgs::DisparityImage disparityImg;
+
     disparityImg.header.stamp = timestamp;
-
-    disparityImg.header.frame_id= localization_method;
-    //disparityImg.header.frame_id= "camera";
-
+    disparityImg.header.frame_id = localization_method;
     disparityImg.f = 128; //focal length, half of the image width
     disparityImg.T = .14; //baseline, half of the distance between the two cameras
     disparityImg.min_disparity = .44; // f.t/z(depth max)
@@ -291,9 +212,6 @@ int main(int argc, char **argv)
     msgDepth_front->header.frame_id = localization_method;
     msgDepth_back->header.frame_id = localization_method;
 
-    //Publish transforms into tf tree
-    CameraPosePublisher(imgs.pose, imgs.pose_gt, imgs.twist, timestamp, odom_pub);
-
     //Publish images
     if (timestamp > last_timestamp)
     {
@@ -308,16 +226,25 @@ int main(int argc, char **argv)
       timestamp = last_timestamp;
     }
 
+    //Publish transforms into tf tree
+    if(localization_method == "gps")
+      gpsPosePublisher(imgs.pose, timestamp, "gps");
+    else
+      groundTruthPosePublisher(imgs.pose_gt, timestamp, "ground_truth");
+
+    // Publish odometry messages
+    odomPublisher(imgs.pose_gt, imgs.twist, timestamp, odom_pub, "ground_truth");
+
     ros::spinOnce();
 
     ros::Time end_hook_t = ros::Time::now();
-    ROS_INFO_STREAM("decoding and publishing fram time"<< end_hook_t - start_hook_t);
+    ROS_INFO_STREAM("Decoding and publishing frame time: "<< end_hook_t - start_hook_t);
 
     loop_rate.sleep();
   }
 
   exit_out = true;
   poll_frame_thread.join();
-  //ros::shutdown();
+
   return 0;
 }

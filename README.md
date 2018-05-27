@@ -5,9 +5,9 @@
 This repository is a fork of the [publishAirsimImgs](https://github.com/marcelinomalmeidan/publishAirsimImgs) repository by [Marcelino Almeida](https://github.com/marcelinomalmeidan). It is a preliminary solution to integrate ROS and AirSim plugin till Microsoft provides an alternative one.
 
 Features within this repo:
-* Publishes rgb data into the topic /Airsim/image
-* Publishes depth data into the topic /Airsim/depth
-* Publishes camera calibration parameters into /Airsim/camera_info
+* Publishes rgb data into the topic `/airsim/right/image_raw`
+* Publishes depth data into the topic `/airsim/depth_front`
+* Publishes camera calibration parameters into `/airsim/depth/camera_info`
 * Publishes a tf tree with the origin, the position/orientation of the quadcoper, and the position/orientation of the camera.
 
 Most of the code was developed by Behzad Boroujerdian and Hasan Genc from the Department Of Electrical and Computer Engineering at The University of Texas at Austin.
@@ -48,7 +48,7 @@ https://github.com/Mayankm96/airsim_img_publisher.git
 ```
 * In order to run mavros, you can follow the example in [`mavrosAirsim.launch`](launch/mavrosAirsim.launch). Note that you will have to change the `fcu_url` parameter to match the IP/Ports in which Airsim is running. All these informations can be found in the `settings.json` file for your Airsim configuration. The ports you are looking for are the "LogViewerPort" and the "UdpPort". Note that the settings.json file have to be configured such that "LogViewerHostIp" and "UdpIp" both have the IP of the computer that will run mavros.
 
-* Set the correct paths to `AIRSIM_ROOT` and `AIRSIM_WS` in the [`CMakeLists.txt`](CMakeLists.txt) file.
+* Set the correct path to `AIRSIM_ROOT` in the [`CMakeLists.txt`](CMakeLists.txt) file.
 
 * To compile the package:
 ```
