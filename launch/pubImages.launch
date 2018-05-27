@@ -26,18 +26,13 @@
     <param name="width" value="640"/>  <!-- Width when calibrated!-->
     <param name="height" value="480"/> <!-- Height when calibrated!-->
 
-    <!-- Depth baseline -->
-    <param name="Tx" value="0.14"/>
-    <param name="scale" value="0.38"/>
-    <param name="maxDist" value="20.0"/>
-
     <!-- Tf params -->
     <param name="camera_frame_id" value="$(arg camera_frame_id)"/>
     <param name="base_frame_id" value="$(arg base_frame_id)"/>
 
     <!-- other params -->
     <param name="localization_method" value="ground_truth"/>
-    <param name="all_front" value="false"/>
+    <param name="cameraID" value="3"/>
     <param name="loop_rate" value="50"/>
 
   </node>

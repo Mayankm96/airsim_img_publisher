@@ -13,7 +13,7 @@
         <!-- Input: Camera calibration and metadata.  (sensor_msgs/CameraInfo) -->
         <remap from="camera_info" to="/airsim/camera_info"/>
         <!-- Input: Rectified depth image -->
-        <remap from="image_rect" to="/airsim/depth_front"/>
+        <remap from="image_rect" to="/airsim/depth"/>
         <!-- Output: Point Cloud -->
         <remap from="points" to="/airsim/points"/>
 

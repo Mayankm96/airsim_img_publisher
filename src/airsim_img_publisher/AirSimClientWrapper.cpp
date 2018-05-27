@@ -58,29 +58,19 @@ void AirSimClientWrapper::connect(const std::string& ip_addr, uint16_t port)
 	client_ = new msr::airlib::MultirotorRpcLibClient(ip_addr, port);
 }
 
-void AirSimClientWrapper::poll_frame(bool all_front)
+void AirSimClientWrapper::poll_frame(int cameraId)
 {
 	static uint64 last_time_stamp = 0;
-	msr::airlib::MultirotorRpcLibClient *my_client = new msr::airlib::MultirotorRpcLibClient(this->ip_addr_, this->port_);
 
 	const int max_tries = 1000000;
 
 	ImageTyp image_type;
-	int cameraId;
-	if (all_front)
-	{
-		cameraId = 0;
-		image_type = ImageTyp::Scene;
-	}
-	else
-	{
-		cameraId = 4;
-		image_type = ImageTyp::DepthPlanner;
-	}
 
 	std::vector<ImageReq> request = {
-		ImageReq(cameraId, image_type),
-	  ImageReq(0, ImageTyp::DepthPlanner)
+		ImageReq(cameraId, ImageTyp::Scene),
+	  ImageReq(cameraId, ImageTyp::DepthPlanner),
+		ImageReq(cameraId, ImageTyp::SurfaceNormals),
+	  ImageReq(cameraId, ImageTyp::Segmentation)
 	};
 
 	try
@@ -98,14 +88,14 @@ void AirSimClientWrapper::poll_frame(bool all_front)
 					return;
 			  }
 
-				response.image = my_client->simGetImages(request);
-			  response.p = my_client->getPosition();
-			  response.q = my_client->getOrientation();
-			  response.state = my_client->getMultirotorState();
+				response.image = client_->simGetImages(request);
+			  response.p = client_->getPosition();
+			  response.q = client_->getOrientation();
+			  response.state = client_->getMultirotorState();
 
 			  for (int i = 0; response.image.size() != request.size() && i < max_tries; i++)
 				{
-			      response.image = my_client->simGetImages(request);
+			      response.image = client_->simGetImages(request);
 			  }
 
 			  response.timestamp = response.image.at(0).time_stamp;
@@ -146,7 +136,7 @@ void AirSimClientWrapper::do_nothing(void)
 }
 
 
-struct image_response_decoded AirSimClientWrapper::image_decode(bool all_front)
+struct image_response_decoded AirSimClientWrapper::image_decode()
 {
   try
 	{
@@ -168,33 +158,18 @@ struct image_response_decoded AirSimClientWrapper::image_decode(bool all_front)
 		struct image_response_decoded result;
 
 #if CV_MAJOR_VERSION==3
-		result.depth_front = cv::imdecode(response.image.at(1).image_data_uint8, cv::IMREAD_GRAYSCALE);
-		if(all_front)
-		{
-		result.right = cv::imdecode(response.image.at(0).image_data_uint8, cv::IMREAD_COLOR);
-		}
-		else
-		{
-		result.depth_back = cv::imdecode(response.image.at(0).image_data_uint8, cv::IMREAD_GRAYSCALE);
-		}
+		result.rgb = cv::imdecode(response.image.at(0).image_data_uint8, cv::IMREAD_COLOR);
+		result.depth = cv::imdecode(response.image.at(1).image_data_uint8, cv::IMREAD_GRAYSCALE);
+		result.normals = cv::imdecode(response.image.at(2).image_data_uint8, cv::IMREAD_COLOR);
+		result.segmentation = cv::imdecode(response.image.at(3).image_data_uint8, cv::IMREAD_COLOR);
 #else
-		result.depth_front = cv::imdecode(response.image.at(1).image.image_data_uint8, CV_LOAD_IMAGE_GRAYSCALE);
-		if (all_front)
-		{
-			result.right = cv::imdecode(response.image.at(0).image_data_uint8, CV_LOAD_IMAGE_COLOR);
-		}
-		else
-		{
-			result.depth_back = cv::imdecode(response.image.at(0).image.image_data_uint8, CV_LOAD_IMAGE_GRAYSCALE);
-		}
+		result.rgb = cv::imdecode(response.image.at(0).image_data_uint8, CV_LOAD_IMAGE_COLOR);
+		result.depth = cv::imdecode(response.image.at(1).image.image_data_uint8, CV_LOAD_IMAGE_GRAYSCALE);
+		result.normals = cv::imdecode(response.image.at(2).image_data_uint8, CV_LOAD_IMAGE_COLOR);
+		result.segmentation = cv::imdecode(response.image.at(3).image_data_uint8, CV_LOAD_IMAGE_COLOR);
 #endif
 
-		result.depth_front.convertTo(result.depth_front, CV_32FC1, 25.6/256);
-
-		if (!all_front)
-		{
-			result.depth_back.convertTo(result.depth_back, CV_32FC1, 25.6/256);
-		}
+		result.depth.convertTo(result.depth, CV_32FC1, 25.6/256);
 
 		//ground truth values
 		static auto initial_pos_gt= response.image.back().camera_position;
@@ -238,15 +213,15 @@ struct image_response_decoded AirSimClientWrapper::image_decode(bool all_front)
   }
 }
 
-struct image_response_decoded AirSimClientWrapper::poll_frame_and_decode()
+struct image_response_decoded AirSimClientWrapper::poll_frame_and_decode(int cameraId)
 {
 
 	struct image_response_decoded result;
 	const int max_tries = 1000000;
 
 	std::vector<ImageReq> request = {
-		ImageReq(1, ImageTyp::Scene),
-	  ImageReq(1, ImageTyp::DepthPlanner)
+		ImageReq(cameraId, ImageTyp::Scene),
+	  ImageReq(cameraId, ImageTyp::DepthPlanner)
 	};
 
   std::vector<ImageRes> response = client_->simGetImages(request);
@@ -259,14 +234,14 @@ struct image_response_decoded AirSimClientWrapper::poll_frame_and_decode()
   if (response.size() == request.size())
 	{
 #if CV_MAJOR_VERSION==3
-		result.right = cv::imdecode(response.at(0).image_data_uint8, cv::IMREAD_COLOR);
-		result.depth_front = cv::imdecode(response.at(1).image_data_uint8, cv::IMREAD_GRAYSCALE);
+		result.rgb = cv::imdecode(response.at(0).image_data_uint8, cv::IMREAD_COLOR);
+		result.depth = cv::imdecode(response.at(1).image_data_uint8, cv::IMREAD_GRAYSCALE);
 #else
-		result.right = cv::imdecode(response.at(0).image_data_uint8, CV_LOAD_IMAGE_COLOR);
-		result.depth_front = cv::imdecode(response.at(1).image_data_uint8, CV_LOAD_IMAGE_GRAYSCALE);
+		result.rgb = cv::imdecode(response.at(0).image_data_uint8, CV_LOAD_IMAGE_COLOR);
+		result.depth = cv::imdecode(response.at(1).image_data_uint8, CV_LOAD_IMAGE_GRAYSCALE);
 #endif
 
-    result.depth_front.convertTo(result.depth_front, CV_32FC1, 25.6/256);
+    result.depth.convertTo(result.depth, CV_32FC1, 25.6/256);
 	}
 	else
 	{

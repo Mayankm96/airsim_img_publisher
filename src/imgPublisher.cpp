@@ -116,11 +116,11 @@ int main(int argc, char **argv)
   ROS_INFO("Localization Method: %s", localization_method.c_str());
 
   // camera ID (front or back)
-  bool all_front;
-  if (! ros::param::get("~all_front", all_front))
+  int cameraID;
+  if (! ros::param::get("~cameraID", cameraID))
   {
-      ROS_WARN("Using default value for all_front: false ");
-      all_front = false;
+      ROS_WARN("Using default value for cameraID: false ");
+      cameraID = 0;
   }
 
   // tf tree frame names
@@ -135,24 +135,25 @@ int main(int argc, char **argv)
   image_transport::ImageTransport it(n);
 
   image_transport::Publisher rgb_pub = it.advertise("/airsim/rgb/image_raw", 1);
-  image_transport::Publisher depth_pub_front = it.advertise("/airsim/depth_front", 1);
-  image_transport::Publisher depth_pub_back = it.advertise("/airsim/depth_back", 1);
+  image_transport::Publisher depth_pub = it.advertise("/airsim/depth", 1);
+  image_transport::Publisher normals_pub = it.advertise("/airsim/normals/image_raw", 1);
+  image_transport::Publisher segment_pub = it.advertise("/airsim/segmentation/image_raw", 1);
 
   ros::Publisher imgParamL_pub = n.advertise<sensor_msgs::CameraInfo> ("/airsim/camera_info", 1);
-  ros::Publisher imgParamR_pub = n.advertise<sensor_msgs::CameraInfo> ("/airsim/right/camera_info", 1);
+  ros::Publisher imgParamR_pub = n.advertise<sensor_msgs::CameraInfo> ("/airsim/rgb/camera_info", 1);
   ros::Publisher imgParamDepth_pub = n.advertise<sensor_msgs::CameraInfo> ("/airsim/depth/camera_info", 1);
 
   ros::Publisher odom_pub = n.advertise<nav_msgs::Odometry>("/odom", 50);
 
   //ROS Messages
-  sensor_msgs::ImagePtr msgImgRgb, msgDepth_front, msgDepth_back;
+  sensor_msgs::ImagePtr msgImgRgb, msgDepth, msgNormals, msgSegment;
 
   //Main ---------------------------------------------------------------
 
   //Local variables
   AirSimClientWrapper airsim_sampler(ip_addr.c_str(), port, localization_method);
 
-  std::thread poll_frame_thread(&AirSimClientWrapper::poll_frame, &airsim_sampler, all_front);
+  std::thread poll_frame_thread(&AirSimClientWrapper::poll_frame, &airsim_sampler, cameraID);
   signal(SIGINT, sigIntHandler);
 
   // *** F:DN end of communication with simulator (Airsim)
@@ -161,7 +162,7 @@ int main(int argc, char **argv)
   {
     ros::Time start_hook_t = ros::Time::now();
 
-    auto imgs = airsim_sampler.image_decode(all_front);
+    auto imgs = airsim_sampler.image_decode();
     if (!imgs.valid_data)
     {
         continue;
@@ -179,23 +180,26 @@ int main(int argc, char **argv)
     }
 
     // *** F:DN conversion of opencv images to ros images
-    msgImgRgb = cv_bridge::CvImage(std_msgs::Header(), "bgr8", imgs.right).toImageMsg();
-    msgDepth_front = cv_bridge::CvImage(std_msgs::Header(), "32FC1", imgs.depth_front).toImageMsg();
-    msgDepth_back = cv_bridge::CvImage(std_msgs::Header(), "32FC1", imgs.depth_back).toImageMsg();
+    msgImgRgb = cv_bridge::CvImage(std_msgs::Header(), "bgr8", imgs.rgb).toImageMsg();
+    msgDepth = cv_bridge::CvImage(std_msgs::Header(), "32FC1", imgs.depth).toImageMsg();
+    msgNormals = cv_bridge::CvImage(std_msgs::Header(), "bgr8", imgs.normals).toImageMsg();
+    msgSegment = cv_bridge::CvImage(std_msgs::Header(), "bgr8", imgs.segmentation).toImageMsg();
 
     //Stamp messages
     msgCameraInfo.header.frame_id = camera_frame_id;
     msgCameraInfo.header.stamp = timestamp;
     msgImgRgb->header = msgCameraInfo.header;
-    msgDepth_front->header =  msgCameraInfo.header;
-    msgDepth_back->header =  msgCameraInfo.header;
+    msgDepth->header =  msgCameraInfo.header;
+    msgNormals->header =  msgCameraInfo.header;
+    msgSegment->header =  msgCameraInfo.header;
 
     if (timestamp > last_timestamp)
     {
       //Publish images
       rgb_pub.publish(msgImgRgb);
-      depth_pub_front.publish(msgDepth_front);
-      depth_pub_back.publish(msgDepth_back);
+      depth_pub.publish(msgDepth);
+      normals_pub.publish(msgNormals);
+      segment_pub.publish(msgSegment);
       imgParamL_pub.publish(msgCameraInfo);
       imgParamR_pub.publish(msgCameraInfo);
       imgParamDepth_pub.publish(msgCameraInfo);

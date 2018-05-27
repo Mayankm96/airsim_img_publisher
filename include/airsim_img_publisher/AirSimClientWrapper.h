@@ -20,13 +20,10 @@ using ImageTyp = msr::airlib::ImageCaptureBase::ImageType;
 
 struct image_response_decoded
 {
-	cv::Mat left;
-	cv::Mat right;
-
-	cv::Mat depth_front;
-	cv::Mat depth_back;
-	cv::Mat planar_depth;
-	cv::Mat disparity;
+	cv::Mat rgb;
+	cv::Mat depth;
+	cv::Mat normals;
+	cv::Mat segmentation;
 
 	geometry_msgs::Pose pose;
 	geometry_msgs::Pose pose_gt; //ground truth
@@ -64,13 +61,10 @@ class AirSimClientWrapper
 	  geometry_msgs::Twist twist();
 
 		// *** F:DN Camera functions
-		// cv::Mat poll_frame();
-		// cv::Mat poll_frame_depth();
-
 	  void do_nothing();
-	  void poll_frame(bool);
-	  struct image_response_decoded poll_frame_and_decode();
-	  struct image_response_decoded image_decode(bool);
+	  void poll_frame(int cameraId);
+	  struct image_response_decoded poll_frame_and_decode(int cameraId);
+	  struct image_response_decoded image_decode();
 
 	private:
 		// airsim api client
