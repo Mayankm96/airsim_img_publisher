@@ -89,4 +89,46 @@ rosrun rviz rviz -d ~/catkin_ws/src/airsim_img_publisher/rviz/rvizConfig.rviz
 
 ## Nodes
 
-### imgPublisher
+### airsim_imgPublisher ([`imgPublisher.cpp`](src/imgPublisher.cpp))
+
+This is a client node which interfaces with the AirSim plugin to retrieve the drone's pose and camera images.
+
+#### Published Topics
+
+* **`/airsim/rgb/image_raw`** ([sensor_msgs/Image])
+
+	The rgb camera images.
+
+* **`/airsim/depth`** ([sensor_msgs/Image])
+
+	The depth camera images in 32FC1 encoding.
+
+* **`/airsim/normals/image_raw`** ([sensor_msgs/Image])
+
+	The surface normals image in `bgr8` encoding.
+
+* **`/airsim/segmentation/image_raw`** ([sensor_msgs/Image])
+
+	The semantic segmentation labels in `bgr8` encoding.
+
+* **`/airsim/camera_info`** ([sensor_msgs/CameraInfo])
+
+  The rgb camera paramters.
+
+* **`/airsim/depth/camera_info`** ([sensor_msgs/CameraInfo])
+
+  The depth camera paramters.
+
+* **`/tf`**
+  tf tree with the origin (`world`), the position/orientation of the quadcoper (`base_link`), and the position/orientation of the camera (`camera_frame`)
+
+### Parameters
+* **AirSim Communication:** `Airsim_ip` (server's IP address), `Airsim_port` (server's port)
+* **tf frame names:** `camera_frame_id`, `base_frame_id`
+* **Camera parameters:** `Fx`, `Fy`, `cx`, `cz`, `width`, `height`
+* **Localization Method:** `localization_method` (can be either `ground_truth` or `gps`)
+* **Camera ID:** `cameraID` (camera on the drone to use (possible values: 0-4))
+* **Publishing frequency:** `loop_rate`
+
+[sensor_msgs/Image]: http://docs.ros.org/api/sensor_msgs/html/msg/Image.html
+[sensor_msgs/CameraInfo]: http://docs.ros.org/api/sensor_msgs/html/msg/CameraInfo.html
