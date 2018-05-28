@@ -1,7 +1,7 @@
 #include "airsim_img_publisher/TfCallback.h"
 
 // Publish static tf between base_frame_id and camera_frame_id of quadcopter and camera respectively
-void fakeStaticCamPosePublisher(const std::string base_frame_id, const std::string camera_frame_id, const ros::Time& timestamp)
+void fakeStaticCamPosePublisher(const std::string base_frame_id, const std::string camera_frame_id, const int cameraID, const ros::Time& timestamp)
 {
   static tf::TransformBroadcaster br_cam;
   tf::Transform transformCam;
@@ -9,8 +9,18 @@ void fakeStaticCamPosePublisher(const std::string base_frame_id, const std::stri
   transformCam.setOrigin(tf::Vector3(0, 0, 0));
 
   // align the frame between base_link and cam
-  tf::Quaternion rotated = tf::Quaternion(0.707, 0, 0, -0.707) * tf::Quaternion(0, 0, 0.707, -0.707);
-  transformCam.setRotation(rotated);
+  tf::Quaternion orientation;
+  if(cameraID != 3)
+  {
+    // look-in-front camera orientation
+    orientation = tf::Quaternion(0.707, 0, 0, -0.707) * tf::Quaternion(0, 0, 0.707, -0.707);
+  }
+  else
+  {
+    // look-towards-ground camera orientation
+    orientation = tf::Quaternion(0.707, 0.707, 0, 0) * tf::Quaternion(0, 0, 0, 1);
+  }
+  transformCam.setRotation(orientation);
 
   br_cam.sendTransform(tf::StampedTransform(transformCam, timestamp, base_frame_id, camera_frame_id));
 }

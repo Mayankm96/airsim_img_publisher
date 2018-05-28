@@ -109,18 +109,12 @@ int main(int argc, char **argv)
     localization_method = "ground_truth";
   }
 
-  // Verbose
-  ROS_INFO("Image publisher started! Connecting to:");
-  ROS_INFO("IP: %s", ip_addr.c_str());
-  ROS_INFO("Port: %d", port);
-  ROS_INFO("Localization Method: %s", localization_method.c_str());
-
   // camera ID (front or back)
   int cameraID;
   if (! ros::param::get("~cameraID", cameraID))
   {
       ROS_WARN("Using default value for cameraID: false ");
-      cameraID = 0;
+      cameraID = 3;
   }
 
   // tf tree frame names
@@ -130,6 +124,13 @@ int main(int argc, char **argv)
 
   // camera paramters
   sensor_msgs::CameraInfo msgCameraInfo = getCameraParams(camera_frame_id);
+
+  // Verbose
+  ROS_INFO("Image publisher started! Connecting to:");
+  ROS_INFO("IP: %s", ip_addr.c_str());
+  ROS_INFO("Port: %d", port);
+  ROS_INFO("Localization Method: %s", localization_method.c_str());
+  ROS_INFO("Camera ID: %d", cameraID);
 
   // Publishers ---------------------------------------------------------------
   image_transport::ImageTransport it(n);
@@ -205,7 +206,7 @@ int main(int argc, char **argv)
       imgParamDepth_pub.publish(msgCameraInfo);
 
       //Publish transforms into tf tree
-      fakeStaticCamPosePublisher(base_frame_id, camera_frame_id, timestamp);
+      fakeStaticCamPosePublisher(base_frame_id, camera_frame_id, cameraID, timestamp);
       if(localization_method == "gps")
         gpsPosePublisher(imgs.pose, timestamp, base_frame_id);
       else
