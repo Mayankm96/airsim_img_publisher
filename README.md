@@ -71,7 +71,7 @@ Before running the nodes in the package, you need to run Airsim plugin in the Un
 ```
 roslaunch airsim_img_publisher mavrosAirsim.launch
 ```
-- Change the IP configuration in ```/launch/pubImages```  to match the IP in which Airsim is running. Then:
+- Change the IP configuration in [`launch/pubImages.launch`](launch/pubImages.launch)  to match the IP in which Airsim is running. Then:
 ```
 roslaunch airsim_img_publisher pubPointCloud.launch
 ```
@@ -84,14 +84,14 @@ roslaunch airsim_img_publisher octomap.launch
 
 An rviz configuration file can be found at [`/rviz/rvizConfig.rviz`](rviz/rvizConfig.rviz). This configuration allows a user to see the published images, as well as the tf tree.
 ```
-rosrun rviz rviz -d ~/catkin_ws/src/airsim_img_publisher/rviz/rvizConfig.rviz
+rosrun rviz rviz -d ~/catkin_ws/src/airsim_img_publisher/rviz/octomapConfig.rviz
 ```
 
 ## Nodes
 
-### airsim_imgPublisher ([`imgPublisher.cpp`](src/imgPublisher.cpp))
+### airsim_imgPublisher
 
-This is a client node which interfaces with the AirSim plugin to retrieve the drone's pose and camera images.
+This is a client node at ([`imgPublisher.cpp`](src/imgPublisher.cpp)) interfaces with the AirSim plugin to retrieve the drone's pose and camera images.
 
 #### Published Topics
 
@@ -120,7 +120,8 @@ This is a client node which interfaces with the AirSim plugin to retrieve the dr
   The depth camera paramters.
 
 * **`/tf`**
-  tf tree with the origin (`world`), the position/orientation of the quadcoper (`base_link`), and the position/orientation of the camera (`camera_frame`)
+
+  tf tree with the origin (`world`), the position/orientation of the quadcoper (`base_frame_id`), and the position/orientation of the camera (`camera_frame_id`)
 
 ### Parameters
 * **AirSim Communication:** `Airsim_ip` (server's IP address), `Airsim_port` (server's port)
@@ -129,6 +130,9 @@ This is a client node which interfaces with the AirSim plugin to retrieve the dr
 * **Localization Method:** `localization_method` (can be either `ground_truth` or `gps`)
 * **Camera ID:** `cameraID` (camera on the drone to use (possible values: 0-4))
 * **Publishing frequency:** `loop_rate`
+* **Publishing tf between `camera_frame_id` and base_frame_id:** `tf_cam_flag`
+
+__NOTE:__ `cameraID = 3` is the downward facing camera
 
 [sensor_msgs/Image]: http://docs.ros.org/api/sensor_msgs/html/msg/Image.html
 [sensor_msgs/CameraInfo]: http://docs.ros.org/api/sensor_msgs/html/msg/CameraInfo.html

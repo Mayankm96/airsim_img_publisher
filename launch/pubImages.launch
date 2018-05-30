@@ -6,6 +6,7 @@
   <!-- tf tree frame names -->
   <arg name="camera_frame_id" default="camera_frame"/>
   <arg name="base_frame_id" default="base_link"/>
+  <arg name="tf_cam_flag" default="false"/>
 
   <node pkg="airsim_img_publisher"
     type="airsim_imgPublisher"
@@ -27,6 +28,7 @@
     <param name="height" value="480"/> <!-- Height when calibrated!-->
 
     <!-- Tf params -->
+    <param name="tf_cam_flag" value="$(arg tf_cam_flag)"/>
     <param name="camera_frame_id" value="$(arg camera_frame_id)"/>
     <param name="base_frame_id" value="$(arg base_frame_id)"/>
 

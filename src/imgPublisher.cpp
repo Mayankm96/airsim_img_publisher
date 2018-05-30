@@ -119,6 +119,8 @@ int main(int argc, char **argv)
 
   // tf tree frame names
   std::string camera_frame_id, base_frame_id;
+  bool tf_cam_flag;
+  ros::param::param<bool>("~tf_cam_flag", tf_cam_flag, true);
   ros::param::param<std::string>("~camera_frame_id", camera_frame_id, "camera_frame");
   ros::param::param<std::string>("~base_frame_id", base_frame_id, "base_link");
 
@@ -205,8 +207,11 @@ int main(int argc, char **argv)
       imgParamR_pub.publish(msgCameraInfo);
       imgParamDepth_pub.publish(msgCameraInfo);
 
-      //Publish transforms into tf tree
-      fakeStaticCamPosePublisher(base_frame_id, camera_frame_id, cameraID, timestamp);
+      // Publish transforms into tf tree
+      // tf from base_frame_id to camera_frame_id
+      if(tf_cam_flag)
+        fakeStaticCamPosePublisher(base_frame_id, camera_frame_id, cameraID, timestamp);
+      // tf from "world" to base_frame_id
       if(localization_method == "gps")
         gpsPosePublisher(imgs.pose, timestamp, base_frame_id);
       else
