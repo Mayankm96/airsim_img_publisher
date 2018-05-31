@@ -41,10 +41,6 @@ git clone https://github.com/Mayankm96/AirSim_ROS.git
 ./setup.sh
 ./build.sh
 ```  
-* [__mavros__](http://wiki.ros.org/mavros): In order ti publish the `tf` tree, mavros is required to communicate with PX4 and get the pose
-```
-sudo apt-get install ros-kinetic-mavros ros-kinetic-mavros-extras
-```
 
 #### Building
 * To build from source, clone the latest version from this repository into your catkin workspace

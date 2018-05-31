@@ -15,23 +15,22 @@
 		<param name="base_frame_id" value="base_link" />
 
 		<!-- maximum range to integrate (speedup!) -->
-		<param name="sensor_model/max_range" value="200" />
+		<param name="sensor_model/max_range" value="100" />
 
 		<!-- data source to integrate (PointCloud2) -->
 		<remap from="cloud_in" to="/airsim/points" />
 
-		<!-- Filter ground for binary occupancy map -->
-		<!-- <param name="filter_ground" value="true" />
-		<param name="ground_filter_plane_distance" value="1.00" />
-		<param name="ground_filter/distance" value="0.50" /> -->
-    <param name="pointcloud_min_z" type="double" value="-2.0" />
-    <param name="pointcloud_max_z" type="double" value="100.0" />
-    <param name="occupancy_min_z" type="double" value="-2.00" />
-    <param name="occupancy_max_z" type="double" value="100.0" />
+		<!-- maximum range to integrate (speedup!) -->
+		<!--<param name="pointcloud_min_z" value="-5.0" />
+		<param name="pointcloud_max_z" value="5.0" />-->
+		<param name="pointcloud_max_x" value="5.0" />
+		<param name="pointcloud_min_x" value="-5.0" />
 
-		<!-- <param name="ground_filter_plane_distance" value="0.07" />
-		<param name="ground_filter/distance" value="0.04" />
-		<param name="ground_filter/angle" value="0.4" /> -->
+		<!-- maximum range to integrate (speedup!) -->
+		<param name="filter_ground" value="false" />
+		<param name="sensor_model/min" value="0.05" />
+		<param name="sensor_model/max" value="100" />
+		<param name="latch" value="false" />
 
 	</node>
 </launch>
