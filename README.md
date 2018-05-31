@@ -52,7 +52,7 @@ sudo apt-get install ros-kinetic-mavros ros-kinetic-mavros-extras
 cd ~/catkin_ws/src
 https://github.com/Mayankm96/airsim_img_publisher.git
 ```
-* In order to run mavros, you can follow the example in [`mavrosAirsim.launch`](launch/mavrosAirsim.launch). Note that you will have to change the `fcu_url` parameter to match the IP/Ports in which Airsim is running. All these informations can be found in the `settings.json` file for your Airsim configuration. The ports you are looking for are the "LogViewerPort" and the "UdpPort". Note that the settings.json file have to be configured such that "LogViewerHostIp" and "UdpIp" both have the IP of the computer that will run mavros.
+* In order to run AirSim, you will have to change the `Airsim_ip` and `Airsim_port` parameters to match the IP/Ports in which Airsim is running. All these informations can be found in the `settings.json` file (located at `~/Documents/AirSim`) for your Airsim configuration. The ports you are looking for are the "LogViewerPort" and the "UdpPort". Note that the settings.json file have to be configured such that "LogViewerHostIp" and "UdpIp" both have the IP of the computer that will run AirSim.
 
 * Set the correct path to `AIRSIM_ROOT` in the [`CMakeLists.txt`](CMakeLists.txt) file.
 
@@ -67,11 +67,8 @@ catkin_make
 Before running the nodes in the package, you need to run Airsim plugin in the Unreal Engine. In case you are unfamiliar on how to do so, refer to the tutorials available [here](https://github.com/Microsoft/AirSim#tutorials).
 
 ### Running image publisher
-- Run mavros:
-```
-roslaunch airsim_img_publisher mavrosAirsim.launch
-```
-- Change the IP configuration in [`launch/pubImages.launch`](launch/pubImages.launch)  to match the IP in which Airsim is running. Then:
+
+- Change the IP and Port configurations in [`launch/pubImages.launch`](launch/pubImages.launch)  to match the settings in which Airsim is running. Then:
 ```
 roslaunch airsim_img_publisher pubPointCloud.launch
 ```
