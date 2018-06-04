@@ -23,6 +23,7 @@ The `airsim_img_publisher` package has been tested under ROS Kinetic and Ubuntu 
 * Changed the names of topics that are published
 * Added publishing of normals and segmentation images as well
 * Script added to fly the drone in lawn-mower surveillance pattern
+* Added separate node to publish stereo camera images only
 
 ## Installation
 
@@ -84,7 +85,7 @@ rosrun rviz rviz -d ~/catkin_ws/src/airsim_img_publisher/rviz/octomapConfig.rviz
 
 ### airsim_imgPublisher
 
-This is a client node at ([`imgPublisher.cpp`](src/imgPublisher.cpp)) interfaces with the AirSim plugin to retrieve the drone's pose and camera images.
+This is a client node at ([`imgPublisher.cpp`](src/imgPublisher.cpp)) interfaces with the AirSim plugin to retrieve the drone's pose and camera images (rgb, depth, normals and segmentation).
 
 #### Published Topics
 
@@ -126,6 +127,49 @@ This is a client node at ([`imgPublisher.cpp`](src/imgPublisher.cpp)) interfaces
 * **Publishing tf between `camera_frame_id` and base_frame_id:** `tf_cam_flag`
 
 __NOTE:__ `cameraID = 3` is the downward facing camera
+
+### airsim_stereoPublisher
+
+This is a client node at ([`stereoPublisher.cpp`](src/stereoPublisher.cpp)) interfaces with the AirSim plugin to retrieve the drone's pose and stereo camera images.
+
+#### Published Topics
+
+* **`/airsim/rgb/image_raw`** ([sensor_msgs/Image])
+
+	The rgb camera images on left camera frame.
+
+* **`/airsim/rgb/image_raw`** ([sensor_msgs/Image])
+
+	The rgb camera images on left camera frame.
+
+* **`/airsim/rgb/image_raw`** ([sensor_msgs/Image])
+
+	The rgb camera images on right camera frame.
+
+* **`/airsim/depth_registered/depth`** ([sensor_msgs/Image])
+
+	The depth camera images in 32FC1 encoding on left camera frame.
+
+* **`/airsim/camera_info`** ([sensor_msgs/CameraInfo])
+
+  The rgb camera paramters.
+
+* **`/airsim/depth/camera_info`** ([sensor_msgs/CameraInfo])
+
+  The depth camera paramters.
+
+* **`/tf`**
+
+  tf tree with the origin (`world`), the position/orientation of the quadcoper (`base_frame_id`), and the position/orientation of the camera (`camera_frame_id`)
+
+### Parameters
+* **AirSim Communication:** `Airsim_ip` (server's IP address), `Airsim_port` (server's port)
+* **tf frame names:** `camera_frame_id`, `base_frame_id`
+* **Camera parameters:** `Fx`, `Fy`, `cx`, `cz`, `width`, `height`
+* **Depth baseline:** `Tx`
+* **Localization Method:** `localization_method` (can be either `ground_truth` or `gps`)
+* **Publishing frequency:** `loop_rate`
+* **Publishing tf between `camera_frame_id` and base_frame_id:** `tf_cam_flag`
 
 [sensor_msgs/Image]: http://docs.ros.org/api/sensor_msgs/html/msg/Image.html
 [sensor_msgs/CameraInfo]: http://docs.ros.org/api/sensor_msgs/html/msg/CameraInfo.html

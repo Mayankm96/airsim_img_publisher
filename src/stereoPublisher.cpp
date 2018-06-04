@@ -19,7 +19,7 @@
 #include "common/Common.hpp"
 #include "vehicles/multirotor/api/MultirotorRpcLibClient.hpp"
 // include
-#include "airsim_img_publisher/AirSimClientWrapper.h"
+#include "airsim_img_publisher/AirSimClientStereoWrapper.h"
 #include "airsim_img_publisher/TfCallback.h"
 #include "airsim_img_publisher/ImageProcessing.h"
 
@@ -51,6 +51,7 @@ sensor_msgs::CameraInfo getCameraParams(std::string frame)
     sensor_msgs::CameraInfo CameraParam;
 
     // Read camera parameters from launch file
+    ros::param::get("~Tx", Tx);
     ros::param::get("~Fx", Fx);
     ros::param::get("~Fy", Fy);
     ros::param::get("~cx", cx);
@@ -69,7 +70,7 @@ sensor_msgs::CameraInfo getCameraParams(std::string frame)
     CameraParam.R = {1.0, 0.0, 0.0,
                      0.0, 1.0, 0.0,
                      0.0, 0.0, 1.0};
-    CameraParam.P = {Fx,  0.0, cx,  0.0,
+    CameraParam.P = {Fx,  0.0, cx,  Tx,
                      0.0, Fy,  cy,  0.0,
                      0.0, 0.0, 1.0, 0.0};
 
@@ -82,7 +83,7 @@ sensor_msgs::CameraInfo getCameraParams(std::string frame)
 int main(int argc, char **argv)
 {
   //Start ROS ----------------------------------------------------------------
-  ros::init(argc, argv, "airsim_imgPublisher");
+  ros::init(argc, argv, "airsim_stereoPublisher");
   ros::NodeHandle n("~");
 
   //Parameters ---------------------------------------------------------------
@@ -108,19 +109,11 @@ int main(int argc, char **argv)
     localization_method = "ground_truth";
   }
 
-  // camera ID (front or back)
-  int cameraID;
-  if (! ros::param::get("~cameraID", cameraID))
-  {
-      ROS_WARN("Using default value for cameraID: false ");
-      cameraID = 3;
-  }
-
   // tf tree frame names
   std::string camera_frame_id, base_frame_id;
   bool tf_cam_flag;
   ros::param::param<bool>("~tf_cam_flag", tf_cam_flag, true);
-  ros::param::param<std::string>("~camera_frame_id", camera_frame_id, "camera_frame");
+  ros::param::param<std::string>("~camera_frame_id", camera_frame_id, "airsim_center");
   ros::param::param<std::string>("~base_frame_id", base_frame_id, "base_link");
 
   // camera paramters
@@ -131,31 +124,32 @@ int main(int argc, char **argv)
   ROS_INFO("IP: %s", ip_addr.c_str());
   ROS_INFO("Port: %d", port);
   ROS_INFO("Localization Method: %s", localization_method.c_str());
-  ROS_INFO("Camera ID: %d", cameraID);
 
   // Publishers ---------------------------------------------------------------
   image_transport::ImageTransport it(n);
 
   image_transport::Publisher rgb_pub = it.advertise("/airsim/rgb/image_raw", 1);
-  image_transport::Publisher depth_pub = it.advertise("/airsim/depth", 1);
-  image_transport::Publisher normals_pub = it.advertise("/airsim/normals/image_raw", 1);
-  image_transport::Publisher segment_pub = it.advertise("/airsim/segmentation/image_raw", 1);
+  image_transport::Publisher rgb_left_pub = it.advertise("/airsim/left/image_raw", 1);
+  image_transport::Publisher rgb_right_pub = it.advertise("/airsim/right/image_raw", 1);
+  image_transport::Publisher depth_pub = it.advertise("/airsim/depth_registered/depth", 1);
 
-  ros::Publisher imgParamL_pub = n.advertise<sensor_msgs::CameraInfo> ("/airsim/camera_info", 1);
-  ros::Publisher imgParamR_pub = n.advertise<sensor_msgs::CameraInfo> ("/airsim/rgb/camera_info", 1);
+  ros::Publisher imgParamCam_pub = n.advertise<sensor_msgs::CameraInfo> ("/airsim/camera_info", 1);
+  ros::Publisher imgParamRight_pub = n.advertise<sensor_msgs::CameraInfo> ("/airsim/left/camera_info", 1);
+  ros::Publisher imgParamLeft_pub = n.advertise<sensor_msgs::CameraInfo> ("/airsim/right/camera_info", 1);
+  ros::Publisher imgParamRgb_pub = n.advertise<sensor_msgs::CameraInfo> ("/airsim/rgb/camera_info", 1);
   ros::Publisher imgParamDepth_pub = n.advertise<sensor_msgs::CameraInfo> ("/airsim/depth/camera_info", 1);
 
   ros::Publisher odom_pub = n.advertise<nav_msgs::Odometry>("/odom", 50);
 
   //ROS Messages
-  sensor_msgs::ImagePtr msgImgRgb, msgDepth, msgNormals, msgSegment;
+  sensor_msgs::ImagePtr msgImgLeft, msgImgRight, msgDepth;
 
   //Main ---------------------------------------------------------------
 
   //Local variables
-  AirSimClientWrapper airsim_sampler(ip_addr.c_str(), port, localization_method);
+  AirSimClientStereoWrapper airsim_sampler(ip_addr.c_str(), port, localization_method);
 
-  std::thread poll_frame_thread(&AirSimClientWrapper::poll_frame, &airsim_sampler, cameraID);
+  std::thread poll_frame_thread(&AirSimClientStereoWrapper::poll_frame, &airsim_sampler);
   signal(SIGINT, sigIntHandler);
 
   // *** F:DN end of communication with simulator (Airsim)
@@ -182,34 +176,35 @@ int main(int argc, char **argv)
     }
 
     // *** F:DN conversion of opencv images to ros images
-    msgImgRgb = cv_bridge::CvImage(std_msgs::Header(), "bgr8", imgs.rgb).toImageMsg();
+    msgImgLeft = cv_bridge::CvImage(std_msgs::Header(), "bgr8", imgs.left_rgb).toImageMsg();
+    msgImgRight = cv_bridge::CvImage(std_msgs::Header(), "bgr8", imgs.right_rgb).toImageMsg();
     msgDepth = cv_bridge::CvImage(std_msgs::Header(), "32FC1", imgs.depth).toImageMsg();
-    msgNormals = cv_bridge::CvImage(std_msgs::Header(), "bgr8", imgs.normals).toImageMsg();
-    msgSegment = cv_bridge::CvImage(std_msgs::Header(), "bgr8", imgs.segmentation).toImageMsg();
 
     //Stamp messages
     msgCameraInfo.header.frame_id = camera_frame_id;
     msgCameraInfo.header.stamp = timestamp;
-    msgImgRgb->header = msgCameraInfo.header;
+    msgImgLeft->header = msgCameraInfo.header;
+    msgImgRight->header = msgCameraInfo.header;
     msgDepth->header =  msgCameraInfo.header;
-    msgNormals->header =  msgCameraInfo.header;
-    msgSegment->header =  msgCameraInfo.header;
 
     if (timestamp > last_timestamp)
     {
       //Publish images
-      rgb_pub.publish(msgImgRgb);
+      rgb_pub.publish(msgImgLeft);
+      rgb_left_pub.publish(msgImgLeft);
+      rgb_right_pub.publish(msgImgRight);
       depth_pub.publish(msgDepth);
-      normals_pub.publish(msgNormals);
-      segment_pub.publish(msgSegment);
-      imgParamL_pub.publish(msgCameraInfo);
-      imgParamR_pub.publish(msgCameraInfo);
+
+      imgParamCam_pub.publish(msgCameraInfo);
+      imgParamLeft_pub.publish(msgCameraInfo);
+      imgParamRight_pub.publish(msgCameraInfo);
+      imgParamRgb_pub.publish(msgCameraInfo);
       imgParamDepth_pub.publish(msgCameraInfo);
 
       // Publish transforms into tf tree
       // tf from base_frame_id to camera_frame_id
       if(tf_cam_flag)
-        fakeStaticCamPosePublisher(base_frame_id, camera_frame_id, cameraID, timestamp);
+        fakeStaticStereoCamPosePublisher(base_frame_id, camera_frame_id, timestamp);
       // tf from "world" to base_frame_id
       if(localization_method == "gps")
         gpsPosePublisher(imgs.pose, timestamp, base_frame_id);

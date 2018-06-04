@@ -1,0 +1,44 @@
+<launch>
+  <!-- airsim communication parameters -->
+  <arg name="Airsim_ip" default="127.0.0.1"/>
+  <arg name="Airsim_port" default="41451"/>
+
+  <!-- tf tree frame names -->
+  <arg name="camera_frame_id" default="airsim_center"/>
+  <arg name="base_frame_id" default="base_link"/>
+  <arg name="tf_cam_flag" default="false"/>
+
+  <node pkg="airsim_img_publisher"
+    type="airsim_stereoPublisher"
+    name="airsim_stereoPublisher"
+    output="screen" >
+
+    <!-- IP of the Airsim computer -->
+    <param name="Airsim_ip" value="$(arg Airsim_ip)"/>
+
+    <!-- Port of the Airsim computer (this is default, do not change!) -->
+    <param name="Airsim_port" value="$(arg Airsim_port)"/>
+
+    <!-- RGB camera parameters (parameters when calibrated) -->
+    <param name="Fx" value="360"/>
+    <param name="Fy" value="360"/>
+    <param name="cx" value="360"/>
+    <param name="cy" value="240"/>
+    <param name="width" value="640"/>  <!-- Width when calibrated!-->
+    <param name="height" value="480"/> <!-- Height when calibrated!-->
+
+    <!-- Depth baseline -->
+    <param name="Tx" value="0.14"/>
+
+    <!-- Tf params -->
+    <param name="tf_cam_flag" value="$(arg tf_cam_flag)"/>
+    <param name="camera_frame_id" value="$(arg camera_frame_id)"/>
+    <param name="base_frame_id" value="$(arg base_frame_id)"/>
+
+    <!-- other params -->
+    <param name="localization_method" value="ground_truth"/>
+    <param name="loop_rate" value="10"/>
+
+  </node>
+
+</launch>

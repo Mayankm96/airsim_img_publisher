@@ -3,8 +3,8 @@ cmake_minimum_required(VERSION 2.8.3)
 project(airsim_img_publisher)
 
 # Path to AirSim repository compiled with g++
-# set(AIRSIM_ROOT "/home/mayankm/AirSim_ROS")
-set(AIRSIM_ROOT "/export/airsim/AirSim_ROS")
+set(AIRSIM_ROOT "/home/mayankm/AirSim_ROS")
+# set(AIRSIM_ROOT "/export/airsim/AirSim_ROS")
 message(STATUS " AIRSIM_ROOT: ${AIRSIM_ROOT}")
 
 ## Compile as C++11, supported in ROS Kinetic and newer
@@ -84,6 +84,24 @@ add_executable(airsim_imgPublisher
 )
 
 target_link_libraries(airsim_imgPublisher
+  ${catkin_LIBRARIES}
+  AirLib
+  MavLinkCom
+  rpc
+  pthread
+  ${OpenCV_LIBS}
+)
+
+# add C++ executable node airsim_stereoPublisher
+add_executable(airsim_stereoPublisher
+  src/stereoPublisher.cpp
+  src/airsim_img_publisher/AirSimClientStereoWrapper.cpp
+  src/airsim_img_publisher/QuatRotEuler.cpp
+  src/airsim_img_publisher/TfCallback.cpp
+  src/airsim_img_publisher/ImageProcessing.cpp
+)
+
+target_link_libraries(airsim_stereoPublisher
   ${catkin_LIBRARIES}
   AirLib
   MavLinkCom
