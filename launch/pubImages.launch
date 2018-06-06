@@ -4,7 +4,6 @@
   <arg name="Airsim_port" default="41451"/>
 
   <!-- tf tree frame names -->
-  <arg name="camera_frame_id" default="camera_frame"/>
   <arg name="base_frame_id" default="base_link"/>
   <arg name="tf_cam_flag" default="false"/>
 
@@ -29,7 +28,6 @@
 
     <!-- Tf params -->
     <param name="tf_cam_flag" value="$(arg tf_cam_flag)"/>
-    <param name="camera_frame_id" value="$(arg camera_frame_id)"/>
     <param name="base_frame_id" value="$(arg base_frame_id)"/>
 
     <!-- other params -->

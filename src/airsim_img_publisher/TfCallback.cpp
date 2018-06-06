@@ -1,50 +1,68 @@
 #include "airsim_img_publisher/TfCallback.h"
 
 // Publish static tf between base_frame_id and camera_frame_id of quadcopter and camera respectively
-void fakeStaticCamPosePublisher(const std::string base_frame_id, const std::string camera_frame_id, const int cameraID, const ros::Time& timestamp)
+void fakeStaticCamPosePublisher(const std::string base_frame_id, const int cameraID, const ros::Time& timestamp)
 {
   static tf::TransformBroadcaster br_cam;
   tf::Transform transformCam;
-
-  transformCam.setOrigin(tf::Vector3(0, 0, 0));
+  std::string camera_frame_id;
 
   // align the frame between base_link and cam
-  tf::Quaternion orientation;
-  if(cameraID != 3)
-  {
-    // look-in-front camera orientation
-    orientation = tf::Quaternion(0.707, 0, 0, -0.707) * tf::Quaternion(0, 0, 0.707, -0.707);
-  }
-  else
-  {
-    // look-towards-ground camera orientation
-    orientation = tf::Quaternion(0.707, 0.707, 0, 0) * tf::Quaternion(0, 0, 0, 1);
-  }
+  // look-towards-ground camera orientation
+  tf::Quaternion orientation = tf::Quaternion(0.707, 0, 0.707, 0);
   transformCam.setRotation(orientation);
+  // translation
+  switch(cameraID)
+  {
+    // front center camera (cameraID = 0)
+    case 0: transformCam.setOrigin(tf::Vector3(0.046, 0, 0));
+            camera_frame_id = "front_center_optical";
+            break;
+    // front left camera (cameraID = 1)
+    case 1: transformCam.setOrigin(tf::Vector3(0.046, -0.0125, 0));
+            camera_frame_id = "front_left_optical";
+            break;
+    // front right camera (cameraID = 2)
+    case 2: transformCam.setOrigin(tf::Vector3(0.046, 0.0125, 0));
+            camera_frame_id = "front_right_optical";
+            break;
+    // bottom center camera (cameraID = 3)
+    case 3: transformCam.setOrigin(tf::Vector3(0, 0, -0.012));
+            camera_frame_id = "bottom_center_optical";
+            break;
+    // bottom back camera (cameraID = 3)
+    case 4: transformCam.setOrigin(tf::Vector3(-0.046, 0, 0));
+            camera_frame_id = "bottom_back_optical";
+            break;
+    default: ROS_FATAL("CameraID must be between 0-4");
+             exit(1);
+  }
 
   br_cam.sendTransform(tf::StampedTransform(transformCam, timestamp, base_frame_id, camera_frame_id));
 }
 
 // Publish static tf between base_frame_id, camera_center_frame_id and stereo frames of quadcopter and camera respectively
-void fakeStaticStereoCamPosePublisher(const std::string base_frame_id, const std::string camera_center_frame_id, const ros::Time& timestamp, const double Tx)
+void fakeStaticStereoCamPosePublisher(const std::string base_frame_id, const double Tx, const ros::Time& timestamp)
 {
   static tf::TransformBroadcaster br_cam, br_left_cam, br_right_cam;
   tf::Transform transformCam, transformLeftCam, transformRightCam;
 
   // align the frame between base_link and cam with look-towards-ground camera orientation
-  transformCam.setOrigin(tf::Vector3(0, 0, 0));
-  tf::Quaternion orientation = tf::Quaternion(0.707, 0.707, 0, 0) * tf::Quaternion(0, 0, 0, 1);
-  transformCam.setRotation(orientation);
+  std::string camera_center_frame_id = "front_center";
+  transformCam.setOrigin(tf::Vector3(0.046, 0, 0));
+  transformCam.setRotation(tf::Quaternion(1, 0, 0, 0));
   // left optical camera frame
-  transformLeftCam.setOrigin(tf::Vector3(0, 0, 0));
-  transformLeftCam.setRotation(tf::Quaternion(1, 0, 0, 0));
+  std::string camera_left_frame_id = "front_left_optical";
+  transformLeftCam.setOrigin(tf::Vector3(0, -Tx/2, 0));
+  transformLeftCam.setRotation(tf::Quaternion(0.707, 0, 0.707, 0));
   // right optical camera frame
-  transformRightCam.setOrigin(tf::Vector3(Tx, 0, 0));
-  transformRightCam.setRotation(tf::Quaternion(1, 0, 0, 0));
+  std::string camera_right_frame_id = "front_right_optical";
+  transformRightCam.setOrigin(tf::Vector3(0, Tx/2, 0));
+  transformRightCam.setRotation(tf::Quaternion(0.707, 0, 0.707, 0));
 
   br_cam.sendTransform(tf::StampedTransform(transformCam, timestamp, base_frame_id, camera_center_frame_id));
-  br_left_cam.sendTransform(tf::StampedTransform(transformLeftCam, timestamp, camera_center_frame_id, "left_optical_frame"));
-  br_right_cam.sendTransform(tf::StampedTransform(transformRightCam, timestamp, camera_center_frame_id, "right_optical_frame"));
+  br_left_cam.sendTransform(tf::StampedTransform(transformLeftCam, timestamp, camera_center_frame_id, camera_left_frame_id));
+  br_right_cam.sendTransform(tf::StampedTransform(transformRightCam, timestamp, camera_center_frame_id, camera_right_frame_id));
 }
 
 // Publish ground truth tf for the position/orientation of the quadcopter and camera

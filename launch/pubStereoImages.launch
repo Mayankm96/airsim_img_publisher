@@ -28,7 +28,7 @@
     <param name="height" value="480"/> <!-- Height when calibrated!-->
 
     <!-- Depth baseline -->
-    <param name="Tx" value="0.14"/>
+    <param name="Tx" value="0.25"/>
 
     <!-- Tf params -->
     <param name="tf_cam_flag" value="$(arg tf_cam_flag)"/>

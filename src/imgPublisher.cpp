@@ -45,10 +45,32 @@ void sigIntHandler(int sig)
     // client_mutex.unlock();
 }
 
-sensor_msgs::CameraInfo getCameraParams(std::string frame)
+sensor_msgs::CameraInfo getCameraParams(int cameraID)
 {
     double Tx, Fx, Fy, cx, cy, width, height;
     sensor_msgs::CameraInfo CameraParam;
+    std::string camera_frame_id;
+
+    switch(cameraID)
+    {
+      // front center camera (cameraID = 0)
+      case 0: camera_frame_id = "front_center_optical";
+              break;
+      // front left camera (cameraID = 1)
+      case 1: camera_frame_id = "front_left_optical";
+              break;
+      // front right camera (cameraID = 2)
+      case 2: camera_frame_id = "front_right_optical";
+              break;
+      // bottom center camera (cameraID = 3)
+      case 3: camera_frame_id = "bottom_center_optical";
+              break;
+      // bottom back camera (cameraID = 3)
+      case 4: camera_frame_id = "bottom_back_optical";
+              break;
+      default: ROS_FATAL("CameraID must be between 0-4");
+               exit(1);
+    }
 
     // Read camera parameters from launch file
     ros::param::get("~Fx", Fx);
@@ -58,7 +80,7 @@ sensor_msgs::CameraInfo getCameraParams(std::string frame)
     ros::param::get("~width", width);
     ros::param::get("~height", height);
 
-    CameraParam.header.frame_id = frame;
+    CameraParam.header.frame_id = camera_frame_id;
     CameraParam.height = height;
     CameraParam.width = width;
     CameraParam.distortion_model = "plumb_bob";
@@ -120,11 +142,10 @@ int main(int argc, char **argv)
   std::string camera_frame_id, base_frame_id;
   bool tf_cam_flag;
   ros::param::param<bool>("~tf_cam_flag", tf_cam_flag, true);
-  ros::param::param<std::string>("~camera_frame_id", camera_frame_id, "camera_frame");
   ros::param::param<std::string>("~base_frame_id", base_frame_id, "base_link");
 
   // camera paramters
-  sensor_msgs::CameraInfo msgCameraInfo = getCameraParams(camera_frame_id);
+  sensor_msgs::CameraInfo msgCameraInfo = getCameraParams(cameraID);
 
   // Verbose
   ROS_INFO("Image publisher started! Connecting to:");
@@ -132,6 +153,7 @@ int main(int argc, char **argv)
   ROS_INFO("Port: %d", port);
   ROS_INFO("Localization Method: %s", localization_method.c_str());
   ROS_INFO("Camera ID: %d", cameraID);
+  ROS_INFO("Publishing fake drone transformation: %d", tf_cam_flag);
 
   // Publishers ---------------------------------------------------------------
   image_transport::ImageTransport it(n);
@@ -188,7 +210,6 @@ int main(int argc, char **argv)
     msgSegment = cv_bridge::CvImage(std_msgs::Header(), "bgr8", imgs.segmentation).toImageMsg();
 
     //Stamp messages
-    msgCameraInfo.header.frame_id = camera_frame_id;
     msgCameraInfo.header.stamp = timestamp;
     msgImgRgb->header = msgCameraInfo.header;
     msgDepth->header =  msgCameraInfo.header;
@@ -209,7 +230,7 @@ int main(int argc, char **argv)
       // Publish transforms into tf tree
       // tf from base_frame_id to camera_frame_id
       if(tf_cam_flag)
-        fakeStaticCamPosePublisher(base_frame_id, camera_frame_id, cameraID, timestamp);
+        fakeStaticCamPosePublisher(base_frame_id, cameraID, timestamp);
       // tf from "world" to base_frame_id
       if(localization_method == "gps")
         gpsPosePublisher(imgs.pose, timestamp, base_frame_id);

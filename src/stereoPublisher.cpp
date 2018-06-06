@@ -45,13 +45,34 @@ void sigIntHandler(int sig)
     // client_mutex.unlock();
 }
 
-sensor_msgs::CameraInfo getCameraParams(std::string frame)
+sensor_msgs::CameraInfo getCameraParams(int cameraID, double Tx = 0)
 {
-    double Tx, Fx, Fy, cx, cy, width, height;
+    double Fx, Fy, cx, cy, width, height;
     sensor_msgs::CameraInfo CameraParam;
+    std::string camera_frame_id;
+
+    switch(cameraID)
+    {
+      // front center camera (cameraID = 0)
+      case 0: camera_frame_id = "front_center_optical";
+              break;
+      // front left camera (cameraID = 1)
+      case 1: camera_frame_id = "front_left_optical";
+              break;
+      // front right camera (cameraID = 2)
+      case 2: camera_frame_id = "front_right_optical";
+              break;
+      // bottom center camera (cameraID = 3)
+      case 3: camera_frame_id = "bottom_center_optical";
+              break;
+      // bottom back camera (cameraID = 3)
+      case 4: camera_frame_id = "bottom_back_optical";
+              break;
+      default: ROS_FATAL("CameraID must be between 0-4");
+               exit(1);
+    }
 
     // Read camera parameters from launch file
-    ros::param::get("~Tx", Tx);
     ros::param::get("~Fx", Fx);
     ros::param::get("~Fy", Fy);
     ros::param::get("~cx", cx);
@@ -59,7 +80,7 @@ sensor_msgs::CameraInfo getCameraParams(std::string frame)
     ros::param::get("~width", width);
     ros::param::get("~height", height);
 
-    CameraParam.header.frame_id = frame;
+    CameraParam.header.frame_id = camera_frame_id;
     CameraParam.height = height;
     CameraParam.width = width;
     CameraParam.distortion_model = "plumb_bob";
@@ -70,7 +91,7 @@ sensor_msgs::CameraInfo getCameraParams(std::string frame)
     CameraParam.R = {1.0, 0.0, 0.0,
                      0.0, 1.0, 0.0,
                      0.0, 0.0, 1.0};
-    CameraParam.P = {Fx,  0.0, cx,  Tx,
+    CameraParam.P = {Fx,  0.0, cx,  0.0,
                      0.0, Fy,  cy,  0.0,
                      0.0, 0.0, 1.0, 0.0};
 
@@ -110,20 +131,24 @@ int main(int argc, char **argv)
   }
 
   // tf tree frame names
-  std::string camera_frame_id, base_frame_id;
+  std::string base_frame_id;
   bool tf_cam_flag;
+  double Tx;
+  ros::param::param<double>("~Tx", Tx, 0.25);
   ros::param::param<bool>("~tf_cam_flag", tf_cam_flag, true);
-  ros::param::param<std::string>("~camera_frame_id", camera_frame_id, "airsim_center");
   ros::param::param<std::string>("~base_frame_id", base_frame_id, "base_link");
 
   // camera paramters
-  sensor_msgs::CameraInfo msgCameraInfo = getCameraParams(camera_frame_id);
+  sensor_msgs::CameraInfo msgLeftCameraInfo = getCameraParams(1, 0);
+  sensor_msgs::CameraInfo msgRightCameraInfo = getCameraParams(2, Tx);
 
   // Verbose
   ROS_INFO("Image publisher started! Connecting to:");
   ROS_INFO("IP: %s", ip_addr.c_str());
   ROS_INFO("Port: %d", port);
   ROS_INFO("Localization Method: %s", localization_method.c_str());
+  ROS_INFO("Depth Baseline: %f", Tx);
+  ROS_INFO("Publishing fake drone transformation: %d", tf_cam_flag);
 
   // Publishers ---------------------------------------------------------------
   image_transport::ImageTransport it(n);
@@ -181,11 +206,11 @@ int main(int argc, char **argv)
     msgDepth = cv_bridge::CvImage(std_msgs::Header(), "32FC1", imgs.depth).toImageMsg();
 
     //Stamp messages
-    msgCameraInfo.header.frame_id = camera_frame_id;
-    msgCameraInfo.header.stamp = timestamp;
-    msgImgLeft->header = msgCameraInfo.header;
-    msgImgRight->header = msgCameraInfo.header;
-    msgDepth->header =  msgCameraInfo.header;
+    msgLeftCameraInfo.header.stamp = timestamp;
+    msgRightCameraInfo.header.stamp = timestamp;
+    msgImgLeft->header = msgLeftCameraInfo.header;
+    msgImgRight->header = msgRightCameraInfo.header;
+    msgDepth->header =  msgLeftCameraInfo.header;
 
     if (timestamp > last_timestamp)
     {
@@ -195,16 +220,16 @@ int main(int argc, char **argv)
       rgb_right_pub.publish(msgImgRight);
       depth_pub.publish(msgDepth);
 
-      imgParamCam_pub.publish(msgCameraInfo);
-      imgParamLeft_pub.publish(msgCameraInfo);
-      imgParamRight_pub.publish(msgCameraInfo);
-      imgParamRgb_pub.publish(msgCameraInfo);
-      imgParamDepth_pub.publish(msgCameraInfo);
+      imgParamCam_pub.publish(msgLeftCameraInfo);
+      imgParamLeft_pub.publish(msgLeftCameraInfo);
+      imgParamRight_pub.publish(msgRightCameraInfo);
+      imgParamRgb_pub.publish(msgLeftCameraInfo);
+      imgParamDepth_pub.publish(msgLeftCameraInfo);
 
       // Publish transforms into tf tree
       // tf from base_frame_id to camera_frame_id
       if(tf_cam_flag)
-        fakeStaticStereoCamPosePublisher(base_frame_id, camera_frame_id, timestamp);
+        fakeStaticStereoCamPosePublisher(base_frame_id, Tx, timestamp);
       // tf from "world" to base_frame_id
       if(localization_method == "gps")
         gpsPosePublisher(imgs.pose, timestamp, base_frame_id);

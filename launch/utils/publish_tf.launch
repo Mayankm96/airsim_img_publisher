@@ -8,8 +8,6 @@
     <!-- Setting gui parameter to true for display joint slider, for getting joint control -->
   <param name="use_gui" value="$(arg gui)"/>
 
-  <!-- Publish the joint values -->
-  <node name="joint_state_publisher" pkg="joint_state_publisher" type="joint_state_publisher" />
   <!-- Publish current robot joint states using tf -->
   <node name="robot_state_publisher" pkg="robot_state_publisher" type="state_publisher" />
 

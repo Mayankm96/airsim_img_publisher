@@ -115,18 +115,18 @@ This is a client node at ([`imgPublisher.cpp`](src/imgPublisher.cpp)) interfaces
 
 * **`/tf`**
 
-  tf tree with the origin (`world`), the position/orientation of the quadcoper (`base_frame_id`), and the position/orientation of the camera (`camera_frame_id`)
+  tf tree with the origin (`world`), the position/orientation of the quadcoper (`base_frame_id`), and the position/orientation of the camera (frame selected on basis of `cameraID`)
 
 ### Parameters
 * **AirSim Communication:** `Airsim_ip` (server's IP address), `Airsim_port` (server's port)
-* **tf frame names:** `camera_frame_id`, `base_frame_id`
+* **tf frame names:** `base_frame_id`
 * **Camera parameters:** `Fx`, `Fy`, `cx`, `cz`, `width`, `height`
 * **Localization Method:** `localization_method` (can be either `ground_truth` or `gps`)
 * **Camera ID:** `cameraID` (camera on the drone to use (possible values: 0-4))
 * **Publishing frequency:** `loop_rate`
 * **Publishing tf between `camera_frame_id` and base_frame_id:** `tf_cam_flag`
 
-__NOTE:__ `cameraID = 3` is the downward facing camera
+__NOTE:__ In the modified blueprint of the drone for UE4, all cameras are downward-facing.
 
 ### airsim_stereoPublisher
 
@@ -160,16 +160,16 @@ This is a client node at ([`stereoPublisher.cpp`](src/stereoPublisher.cpp)) inte
 
 * **`/tf`**
 
-  tf tree with the origin (`world`), the position/orientation of the quadcoper (`base_frame_id`), and the position/orientation of the camera (`camera_frame_id`)
+  tf tree with the origin (`world`), the position/orientation of the quadcoper (`base_frame_id`), and the position/orientation of the stereo camera
 
 ### Parameters
 * **AirSim Communication:** `Airsim_ip` (server's IP address), `Airsim_port` (server's port)
-* **tf frame names:** `camera_frame_id`, `base_frame_id`
+* **tf frame names:** `base_frame_id`
 * **Camera parameters:** `Fx`, `Fy`, `cx`, `cz`, `width`, `height`
 * **Depth baseline:** `Tx`
 * **Localization Method:** `localization_method` (can be either `ground_truth` or `gps`)
 * **Publishing frequency:** `loop_rate`
-* **Publishing tf between `camera_frame_id` and base_frame_id:** `tf_cam_flag`
+* **Publishing tf between `base_frame_id` and camera frames:** `tf_cam_flag`
 
 [sensor_msgs/Image]: http://docs.ros.org/api/sensor_msgs/html/msg/Image.html
 [sensor_msgs/CameraInfo]: http://docs.ros.org/api/sensor_msgs/html/msg/CameraInfo.html

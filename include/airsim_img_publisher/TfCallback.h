@@ -7,10 +7,10 @@
 #include "airsim_img_publisher/QuatRotEuler.h"
 
 // Publish static tf between base_frame_id and camera_frame_id of quadcopter and camera respectively
-void fakeStaticCamPosePublisher(const std::string base_frame_id, const std::string camera_frame_id, const int cameraID, const ros::Time& timestamp);
+void fakeStaticCamPosePublisher(const std::string base_frame_id, const int cameraID, const ros::Time& timestamp);
 
 // Publish static tf between base_frame_id, camera_center_frame_id and stereo frames of quadcopter and camera respectively
-void fakeStaticStereoCamPosePublisher(const std::string base_frame_id, const std::string camera_center_frame_id, const ros::Time& timestamp, const double Tx = 0.14);
+void fakeStaticStereoCamPosePublisher(const std::string base_frame_id, const double Tx, const ros::Time& timestamp);
 
 // Publish ground truth tf for the position/orientation of the quadcopter and camera (parent frame: 'world')
 void groundTruthPosePublisher(const geometry_msgs::Pose& CamPose_gt, const ros::Time& timestamp, const std::string child_frame);
