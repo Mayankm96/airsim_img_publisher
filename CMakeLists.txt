@@ -3,8 +3,8 @@ cmake_minimum_required(VERSION 2.8.3)
 project(airsim_img_publisher)
 
 # Path to AirSim repository compiled with g++
-set(AIRSIM_ROOT "/home/mayankm/AirSim_ROS")
-# set(AIRSIM_ROOT "/export/airsim/AirSim_ROS")
+# set(AIRSIM_ROOT "/home/mayankm/AirSim_ROS")
+set(AIRSIM_ROOT "/export/airsim/AirSim_ROS")
 message(STATUS " AIRSIM_ROOT: ${AIRSIM_ROOT}")
 
 ## Compile as C++11, supported in ROS Kinetic and newer
