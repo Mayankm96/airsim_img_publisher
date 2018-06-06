@@ -63,9 +63,17 @@ catkin_make
 
 Before running the nodes in the package, you need to run Airsim plugin in the Unreal Engine. In case you are unfamiliar on how to do so, refer to the tutorials available [here](https://github.com/Microsoft/AirSim#tutorials).
 
+## Running the `tf` publisher of drone model (DJI M100)
+If you wish to use the [`urdf`](urdf) model of the drone used in AirSim simulator, then
+1. Change `tf_cam_flag` to `false` in [`pubImages.launch`](launch/pubImages.launch) and [`pubStereoImages.launch'](launch/pubStereoImages.launch)
+2. Run:
+```
+roslaunch airsim_img_publisher publish_tf.launch
+```
+
 ### Running image publisher
 
-- Change the IP and Port configurations in [`launch/pubImages.launch`](launch/pubImages.launch)  to match the settings in which Airsim is running. Then:
+Change the IP and Port configurations in [`pubImages.launch`](launch/pubImages.launch)  to match the settings in which Airsim is running. Then:
 ```
 roslaunch airsim_img_publisher pubPointCloud.launch
 ```
