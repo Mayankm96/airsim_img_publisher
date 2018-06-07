@@ -5,7 +5,7 @@
 
   <!-- tf tree frame names -->
   <arg name="base_frame_id" default="base_link"/>
-  <arg name="tf_cam_flag" default="false"/>
+  <arg name="tf_cam_flag" default="true"/>
 
   <node pkg="airsim_img_publisher"
     type="airsim_imgPublisher"
