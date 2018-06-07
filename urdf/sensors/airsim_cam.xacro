@@ -10,7 +10,7 @@
     <joint name="front_center_cam" type="fixed">
       <parent link="${name}_link" />
       <child link="front_center_optical" />
-      <origin xyz="0.046 0 0" rpy="0 ${M_PI/2} 0" />
+      <origin xyz="0.046 0 0" rpy="${M_PI} 0 -${M_PI/2}" />
     </joint>
 
     <!-- front left camera (cameraID = 1) -->
@@ -18,7 +18,7 @@
     <joint name="front_left_cam" type="fixed">
       <parent link="${name}_link" />
       <child link="front_left_optical" />
-      <origin xyz="0.046 -0.0125 0" rpy="0 ${M_PI/2} 0" />
+      <origin xyz="0.046 -0.0125 0" rpy="${M_PI} 0 -${M_PI/2}" />
     </joint>
 
     <!-- front right camera (cameraID = 2) -->
@@ -26,7 +26,7 @@
     <joint name="front_right_cam" type="fixed">
       <parent link="${name}_link" />
       <child link="front_right_optical" />
-      <origin xyz="0.046 0.0125 0" rpy="0 ${M_PI/2} 0" />
+      <origin xyz="0.046 0.0125 0" rpy="${M_PI} 0 -${M_PI/2}" />
     </joint>
 
     <!-- bottom center camera (cameraID = 3) -->
@@ -34,7 +34,7 @@
     <joint name="bottom_center_cam" type="fixed">
       <parent link="${name}_link" />
       <child link="bottom_center_optical" />
-      <origin xyz="0 0 -0.012" rpy="0 ${M_PI/2} 0" />
+      <origin xyz="0 0 -0.012" rpy="${M_PI} 0 -${M_PI/2}" />
     </joint>
 
     <!-- bottom back camera (cameraID = 4) -->
@@ -42,7 +42,7 @@
     <joint name="bottom_back_cam" type="fixed">
       <parent link="${name}_link" />
       <child link="bottom_back_optical" />
-      <origin xyz="-0.046 0 0" rpy="0 ${M_PI/2} 0" />
+      <origin xyz="-0.046 0 0" rpy="${M_PI} 0 -${M_PI/2}" />
     </joint>
 
   </xacro:macro>

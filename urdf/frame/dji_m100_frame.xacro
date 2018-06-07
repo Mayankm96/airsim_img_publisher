@@ -12,8 +12,7 @@
 
   <!-- The xacro macro xacro:drone_base contains: frame -->
   <xacro:macro name="dji_m100_frame" params="name">
-    <!-- dummy frame to the bottom of the drone -->
-    <link name="${name}_footprint">
+    <link name="${name}_link">
       <inertial>
         <mass value="${base_mass}" />
         <origin xyz="0 0 0" rpy="0 0 0"/>
@@ -25,11 +24,11 @@
                  izz="0.022766" />
       </inertial>
       <visual>
-        <origin xyz="0.35 0.25 -0.14" rpy="${M_PI/2} 0 ${-M_PI/2}" />
+        <origin xyz="-0.35 -0.25 -0.14" rpy="${M_PI/2} 0 ${M_PI/2}" />
         <geometry>
           <mesh filename="package://airsim_img_publisher/meshes/DJI_M100_CAD.STL" scale="0.001 0.001 0.001"/>
         </geometry>
-        <material name="Grey" />
+        <material name="Black" />
       </visual>
       <collision>
         <origin xyz="0 0 0" rpy="0 0 0" />
@@ -39,14 +38,6 @@
       </collision>
     </link>
 
-    <!-- base_link frame -->
-    <!-- front center camera (cameraID = 0) -->
-    <link name="${name}_link" />
-    <joint name="${name}_dummy_joint" type="fixed">
-      <parent link="${name}_footprint" />
-      <child link="${name}_link" />
-      <origin xyz="0 0 0" rpy="0 0 ${M_PI}" />
-    </joint>
   </xacro:macro>
 
 </robot>
