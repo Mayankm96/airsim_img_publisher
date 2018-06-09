@@ -24,6 +24,7 @@ The `airsim_img_publisher` package has been tested under ROS Kinetic and Ubuntu 
 * Added publishing of normals and segmentation images as well
 * Script added to fly the drone in lawn-mower surveillance pattern
 * Added separate node to publish stereo camera images only
+* Added `urdf` model of a quadrotor with camera frames present in the same manner as that of the quarotor's blueprint in the simulator
 
 ## Installation
 
@@ -65,11 +66,13 @@ Before running the nodes in the package, you need to run Airsim plugin in the Un
 
 ## Running the `tf` publisher of drone model (DJI M100)
 If you wish to use the [`urdf`](urdf) model of the drone used in AirSim simulator, then
-1. Change `tf_cam_flag` to `false` in [`pubImages.launch`](launch/pubImages.launch) and [`pubStereoImages.launch'](launch/pubStereoImages.launch)
+1. Change `tf_cam_flag` to `false` in [`pubImages.launch`](launch/pubImages.launch) and [`pubStereoImages.launch`](launch/pubStereoImages.launch)
 2. Run:
 ```
 roslaunch airsim_img_publisher publish_tf.launch
 ```
+
+__NOTE:__ Alternately, you may set `tf_cam_flag` to `true` and allow the node to publish the required transformations on it's own
 
 ### Running image publisher
 
@@ -93,7 +96,7 @@ rosrun rviz rviz -d ~/catkin_ws/src/airsim_img_publisher/rviz/octomapConfig.rviz
 
 ### airsim_imgPublisher
 
-This is a client node at ([`imgPublisher.cpp`](src/imgPublisher.cpp)) interfaces with the AirSim plugin to retrieve the drone's pose and camera images (rgb, depth, normals and segmentation).
+This is a client node at ([`imgPublisher.cpp`](src/imgPublisher.cpp)) interfaces with the AirSim plugin to retrieve the drone's pose and camera images **(rgb, depth, normals and segmentation)**.
 
 #### Published Topics
 
@@ -125,7 +128,7 @@ This is a client node at ([`imgPublisher.cpp`](src/imgPublisher.cpp)) interfaces
 
   tf tree with the origin (`world`), the position/orientation of the quadcoper (`base_frame_id`), and the position/orientation of the camera (frame selected on basis of `cameraID`)
 
-### Parameters
+#### Parameters
 * **AirSim Communication:** `Airsim_ip` (server's IP address), `Airsim_port` (server's port)
 * **tf frame names:** `base_frame_id`
 * **Camera parameters:** `Fx`, `Fy`, `cx`, `cz`, `width`, `height`
@@ -138,7 +141,7 @@ __NOTE:__ In the modified blueprint of the drone for UE4, all cameras are downwa
 
 ### airsim_stereoPublisher
 
-This is a client node at ([`stereoPublisher.cpp`](src/stereoPublisher.cpp)) interfaces with the AirSim plugin to retrieve the drone's pose and stereo camera images.
+This is a client node at ([`stereoPublisher.cpp`](src/stereoPublisher.cpp)) interfaces with the AirSim plugin to retrieve the drone's pose and stereo camera images **(stereo images, depthmap registered to left camera frame)**.
 
 #### Published Topics
 
@@ -170,7 +173,7 @@ This is a client node at ([`stereoPublisher.cpp`](src/stereoPublisher.cpp)) inte
 
   tf tree with the origin (`world`), the position/orientation of the quadcoper (`base_frame_id`), and the position/orientation of the stereo camera
 
-### Parameters
+#### Parameters
 * **AirSim Communication:** `Airsim_ip` (server's IP address), `Airsim_port` (server's port)
 * **tf frame names:** `base_frame_id`
 * **Camera parameters:** `Fx`, `Fy`, `cx`, `cz`, `width`, `height`
