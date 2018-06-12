@@ -65,6 +65,7 @@ catkin_make
 Before running the nodes in the package, you need to run Airsim plugin in the Unreal Engine. In case you are unfamiliar on how to do so, refer to the tutorials available [here](https://github.com/Microsoft/AirSim#tutorials).
 
 ## Running the `tf` publisher of drone model (DJI M100)
+
 If you wish to use the [`urdf`](urdf) model of the drone used in AirSim simulator, then
 1. Change `tf_cam_flag` to `false` in [`pubImages.launch`](launch/pubImages.launch) and [`pubStereoImages.launch`](launch/pubStereoImages.launch)
 2. Run:
@@ -72,7 +73,9 @@ If you wish to use the [`urdf`](urdf) model of the drone used in AirSim simulato
 roslaunch airsim_img_publisher publish_tf.launch
 ```
 
-__NOTE:__ Alternately, you may set `tf_cam_flag` to `true` and allow the node to publish the required transformations on it's own
+Alternately, you may set `tf_cam_flag` to `true` and allow the node to publish the required transformations on it's own
+
+__NOTE:__ In the modified blueprint of the drone for UE4, all cameras are downward-facing.
 
 ### Running image publisher
 
@@ -135,9 +138,8 @@ This is a client node at ([`imgPublisher.cpp`](src/imgPublisher.cpp)) interfaces
 * **Localization Method:** `localization_method` (can be either `ground_truth` or `gps`)
 * **Camera ID:** `cameraID` (camera on the drone to use (possible values: 0-4))
 * **Publishing frequency:** `loop_rate`
-* **Publishing tf between `camera_frame_id` and base_frame_id:** `tf_cam_flag`
+* **Publishing tf between `camera_frame_id` and `base_frame_id`:** `tf_cam_flag`
 
-__NOTE:__ In the modified blueprint of the drone for UE4, all cameras are downward-facing.
 
 ### airsim_stereoPublisher
 
