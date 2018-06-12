@@ -16,6 +16,11 @@ The `airsim_img_publisher` package has been tested under ROS Kinetic and Ubuntu 
 
 ## Changelog
 
+<p align="center">
+	<img src="docs/dji_m100.png" alt="urdf model of DJI M100" width="75%" height="75%">
+</p>
+
+* Added `urdf` model of a quadrotor similar to the quarotor's blueprint in the simulator
 * The header files have been renamed and shifted to the `include` directory
 * Fixed bugs in the code
 * README modified for better understanding
@@ -24,7 +29,6 @@ The `airsim_img_publisher` package has been tested under ROS Kinetic and Ubuntu 
 * Added publishing of normals and segmentation images as well
 * Script added to fly the drone in lawn-mower surveillance pattern
 * Added separate node to publish stereo camera images only
-* Added `urdf` model of a quadrotor with camera frames present in the same manner as that of the quarotor's blueprint in the simulator
 
 ## Installation
 
@@ -64,7 +68,7 @@ catkin_make
 
 Before running the nodes in the package, you need to run Airsim plugin in the Unreal Engine. In case you are unfamiliar on how to do so, refer to the tutorials available [here](https://github.com/Microsoft/AirSim#tutorials).
 
-## Running the `tf` publisher of drone model (DJI M100)
+### Running the `tf` publisher of drone model (DJI M100)
 
 If you wish to use the [`urdf`](urdf) model of the drone used in AirSim simulator, then
 1. Change `tf_cam_flag` to `false` in [`pubImages.launch`](launch/pubImages.launch) and [`pubStereoImages.launch`](launch/pubStereoImages.launch)
@@ -90,9 +94,9 @@ roslaunch airsim_img_publisher octomap.launch
 ```
 ### Visualization on rviz
 
-An rviz configuration file can be found at [`/rviz/rvizConfig.rviz`](rviz/rvizConfig.rviz). This configuration allows a user to see the published images, as well as the tf tree.
+An rviz configuration file can be found in the [`rviz`](rviz) directory. This configuration allows a user to see the published images, as well as the tf tree.
 ```
-rosrun rviz rviz -d ~/catkin_ws/src/airsim_img_publisher/rviz/octomapConfig.rviz
+rosrun rviz rviz -d ~/catkin_ws/src/airsim_img_publisher/rviz/pclConfig.rviz
 ```
 
 ## Nodes
@@ -151,11 +155,11 @@ This is a client node at ([`stereoPublisher.cpp`](src/stereoPublisher.cpp)) inte
 
 	The rgb camera images on left camera frame.
 
-* **`/airsim/rgb/image_raw`** ([sensor_msgs/Image])
+* **`/airsim/left/image_raw`** ([sensor_msgs/Image])
 
 	The rgb camera images on left camera frame.
 
-* **`/airsim/rgb/image_raw`** ([sensor_msgs/Image])
+* **`/airsim/right/image_raw`** ([sensor_msgs/Image])
 
 	The rgb camera images on right camera frame.
 
